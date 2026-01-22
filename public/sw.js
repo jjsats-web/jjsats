@@ -1,6 +1,7 @@
-﻿const CACHE_VERSION = "v1";
+﻿const CACHE_VERSION = "v2";
 const CORE_CACHE = `core-${CACHE_VERSION}`;
 const RUNTIME_CACHE = `runtime-${CACHE_VERSION}`;
+const DEV_HOSTS = ["localhost", "127.0.0.1"];
 const CORE_ASSETS = [
   "/",
   "/manifest.webmanifest",
@@ -40,6 +41,11 @@ self.addEventListener("fetch", (event) => {
 
   const requestUrl = new URL(event.request.url);
   if (requestUrl.origin !== self.location.origin) {
+    return;
+  }
+
+  const isDevHost = DEV_HOSTS.includes(self.location.hostname);
+  if (isDevHost && requestUrl.pathname.startsWith("/_next/")) {
     return;
   }
 

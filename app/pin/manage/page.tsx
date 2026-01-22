@@ -17,6 +17,14 @@ type PinProfile = {
   role: "admin" | "user";
 };
 
+type MenuItem = {
+  id: string;
+  href: string;
+  label: string;
+  icon: string;
+  adminOnly?: boolean;
+};
+
 type PinDraft = {
   pin: string;
   firstName: string;
@@ -45,6 +53,37 @@ export default function PinManagePage() {
   const [saving, setSaving] = useState(false);
   const [deletingId, setDeletingId] = useState("");
   const [pinProfile, setPinProfile] = useState<PinProfile>({ role: "user" });
+  const activeHref = "/pin/manage";
+  const menuItems: MenuItem[] = [
+    { id: "quote", href: "/", label: "ใบเสนอราคา", icon: "description" },
+    { id: "customer", href: "/customer", label: "ทะเบียนลูกค้า", icon: "group" },
+    {
+      id: "product",
+      href: "/product",
+      label: "สินค้าบริษัท",
+      icon: "inventory_2",
+      adminOnly: true,
+    },
+    {
+      id: "register",
+      href: "/pin/register",
+      label: "ลงทะเบียน",
+      icon: "app_registration",
+      adminOnly: true,
+    },
+    {
+      id: "manage",
+      href: "/pin/manage",
+      label: "จัดการ PIN",
+      icon: "password",
+      adminOnly: true,
+    },
+    { id: "logout", href: "/logout", label: "ออกจากระบบ", icon: "logout" },
+  ];
+  const visibleMenuItems =
+    pinProfile.role === "admin"
+      ? menuItems
+      : menuItems.filter((item) => !item.adminOnly);
 
   const loadPins = useCallback(async () => {
     setLoading(true);
@@ -214,23 +253,9 @@ export default function PinManagePage() {
   }, [loading, pins.length]);
 
   return (
-    <main>
+    <main className="pb-24 lg:pb-0">
       <header className="topbar">
         <div className="topbar__brand">JJSATs Quotation</div>
-        <nav>
-          <Link href="/">ใบเสนอราคา</Link>
-          <Link href="/customer">ทะเบียนลูกค้า</Link>
-          {pinProfile.role === "admin" ? (
-            <>
-              <Link href="/product">สินค้าบริษัท</Link>
-              <Link href="/pin/register">ลงทะเบียน</Link>
-            </>
-          ) : null}
-          <Link href="/pin/manage" className="active">
-            จัดการ PIN
-          </Link>
-          <Link href="/logout">ออกจากระบบ</Link>
-        </nav>
       </header>
 
       <div className="container">
@@ -404,6 +429,35 @@ export default function PinManagePage() {
             </tbody>
           </table>
         </div>
+      </div>
+      <div
+        className="fixed bottom-0 left-0 w-full bg-white dark:bg-surface-dark border-t border-slate-100 dark:border-border-dark flex justify-around items-center py-2 px-6 z-30 lg:hidden"
+        style={{ paddingBottom: "env(safe-area-inset-bottom)", height: "64px" }}
+      >
+        {visibleMenuItems.map((item) => {
+          const isActive = item.href === activeHref;
+          return (
+            <Link
+              key={item.id}
+              href={item.href}
+              className={`flex flex-col items-center gap-1 ${
+                isActive ? "text-primary" : "text-slate-400"
+              }`}
+              aria-current={isActive ? "page" : undefined}
+            >
+              <span
+                className={`material-symbols-outlined text-[24px]${
+                  isActive ? " font-bold" : ""
+                }`}
+              >
+                {item.icon}
+              </span>
+              <span className={`text-[10px] ${isActive ? "font-bold" : "font-medium"}`}>
+                {item.label}
+              </span>
+            </Link>
+          );
+        })}
       </div>
     </main>
   );

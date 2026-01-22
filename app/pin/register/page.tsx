@@ -3,10 +3,18 @@
 import Image from "next/image";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 
 const PIN_LENGTH = 6;
 const MAX_SIGNATURE_SIZE = 1024 * 1024;
+type PinProfile = { firstName: string; lastName: string; role: "admin" | "user" };
+type MenuItem = {
+  id: string;
+  href: string;
+  label: string;
+  icon: string;
+  adminOnly?: boolean;
+};
 
 export default function PinRegisterPage() {
   const router = useRouter();
@@ -18,11 +26,70 @@ export default function PinRegisterPage() {
   const [role, setRole] = useState<"admin" | "user">("user");
   const [error, setError] = useState("");
   const [pending, setPending] = useState(false);
+  const [pinProfile, setPinProfile] = useState<PinProfile>({
+    firstName: "",
+    lastName: "",
+    role: "user",
+  });
+  const activeHref = "/pin/register";
+  const menuItems: MenuItem[] = [
+    { id: "quote", href: "/", label: "ใบเสนอราคา", icon: "description" },
+    { id: "customer", href: "/customer", label: "ทะเบียนลูกค้า", icon: "group" },
+    {
+      id: "product",
+      href: "/product",
+      label: "สินค้าบริษัท",
+      icon: "inventory_2",
+      adminOnly: true,
+    },
+    {
+      id: "register",
+      href: "/pin/register",
+      label: "ลงทะเบียน",
+      icon: "app_registration",
+      adminOnly: true,
+    },
+    {
+      id: "manage",
+      href: "/pin/manage",
+      label: "จัดการ PIN",
+      icon: "password",
+      adminOnly: true,
+    },
+    { id: "logout", href: "/logout", label: "ออกจากระบบ", icon: "logout" },
+  ];
+  const visibleMenuItems =
+    pinProfile.role === "admin"
+      ? menuItems
+      : menuItems.filter((item) => !item.adminOnly);
   const actionStyle = {
     display: "inline-flex",
     justifyContent: "center",
     width: "100%",
   };
+
+  useEffect(() => {
+    const loadProfile = async () => {
+      try {
+        const res = await fetch("/api/pin", { cache: "no-store" });
+        const data = (await res.json()) as {
+          firstName?: string;
+          lastName?: string;
+          role?: string;
+          error?: string;
+        };
+        if (!res.ok || !data || "error" in data) return;
+        setPinProfile({
+          firstName: data.firstName?.trim() ?? "",
+          lastName: data.lastName?.trim() ?? "",
+          role: data.role === "admin" ? "admin" : "user",
+        });
+      } catch {
+        // ignore
+      }
+    };
+    void loadProfile();
+  }, []);
 
   const handleSignatureChange = (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
@@ -113,7 +180,7 @@ export default function PinRegisterPage() {
   };
 
   return (
-    <main className="pin-page">
+    <main className="pin-page pb-24 lg:pb-0">
       <div className="pin-card">
         <h1>ตั้งค่า PIN</h1>
         <p className="pin-hint">ตั้ง PIN ใหม่เพื่อใช้เข้าหน้าทะเบียนลูกค้า</p>
@@ -204,14 +271,36 @@ export default function PinRegisterPage() {
           >
             {pending ? "กำลังบันทึก..." : "บันทึก PIN"}
           </button>
-          <Link
-            href="/pin"
-            className="ghost-link"
-            style={{ ...actionStyle, marginTop: "0.35rem" }}
-          >
-            กลับ
-          </Link>
         </form>
+      </div>
+      <div
+        className="fixed bottom-0 left-0 w-full bg-white dark:bg-surface-dark border-t border-slate-100 dark:border-border-dark flex justify-around items-center py-2 px-6 z-30 lg:hidden"
+        style={{ paddingBottom: "env(safe-area-inset-bottom)", height: "64px" }}
+      >
+        {visibleMenuItems.map((item) => {
+          const isActive = item.href === activeHref;
+          return (
+            <Link
+              key={item.id}
+              href={item.href}
+              className={`flex flex-col items-center gap-1 ${
+                isActive ? "text-primary" : "text-slate-400"
+              }`}
+              aria-current={isActive ? "page" : undefined}
+            >
+              <span
+                className={`material-symbols-outlined text-[24px]${
+                  isActive ? " font-bold" : ""
+                }`}
+              >
+                {item.icon}
+              </span>
+              <span className={`text-[10px] ${isActive ? "font-bold" : "font-medium"}`}>
+                {item.label}
+              </span>
+            </Link>
+          );
+        })}
       </div>
     </main>
   );

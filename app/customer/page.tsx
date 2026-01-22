@@ -79,7 +79,6 @@ export default function CustomerPage() {
     lastName: "",
     role: "user",
   });
-  const [isMenuOpen, setIsMenuOpen] = useState(false);
 
   const showModal = async (title: string, icon: SwalIcon = "info") => {
     try {
@@ -227,7 +226,6 @@ export default function CustomerPage() {
 
   const totalCustomersLabel = loading ? "-" : formatCount(customers.length);
   const customersThisMonthLabel = loading ? "-" : formatSignedCount(customersThisMonth);
-  const displayName = `${pinProfile.firstName} ${pinProfile.lastName}`.trim();
   const activeHref = "/customer";
   const menuItems: MenuItem[] = [
     { id: "quote", href: "/", label: "ใบเสนอราคา", icon: "description" },
@@ -259,14 +257,6 @@ export default function CustomerPage() {
     pinProfile.role === "admin"
       ? menuItems
       : menuItems.filter((item) => !item.adminOnly);
-  const primaryMenuItems = visibleMenuItems.filter((item) => item.id !== "logout");
-  const logoutMenuItem = visibleMenuItems.find((item) => item.id === "logout");
-  const menuItemBase =
-    "flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-semibold transition-colors";
-  const menuItemActive =
-    "bg-primary text-white shadow-[0_10px_20px_rgba(0,124,138,0.2)]";
-  const menuItemIdle =
-    "text-text-primary-light dark:text-text-primary-dark hover:bg-gray-100 dark:hover:bg-gray-800";
 
   const recentActions = useMemo<RecentAction[]>(() => {
     if (loading || !customers.length) return [];
@@ -548,102 +538,12 @@ export default function CustomerPage() {
       </svg>
       </div>
       <div className="customer-mobile bg-background-light dark:bg-background-dark font-display antialiased text-text-primary-light dark:text-text-primary-dark h-screen overflow-hidden flex flex-col">
-        <header className="flex-none bg-surface-light dark:bg-surface-dark shadow-sm z-10 sticky top-0 px-4 py-3 flex items-center justify-between border-b border-border-light dark:border-border-dark">
-          <button
-            type="button"
-            className="flex items-center justify-center p-2 rounded-full hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors text-text-primary-light dark:text-text-primary-dark"
-            aria-label={isMenuOpen ? "Close menu" : "Open menu"}
-            aria-expanded={isMenuOpen}
-            aria-controls="customer-app-menu"
-            onClick={() => setIsMenuOpen((prev) => !prev)}
-          >
-            <span className="material-symbols-outlined text-[24px]">
-              {isMenuOpen ? "close" : "menu"}
-            </span>
-          </button>
-          <h1 className="text-lg font-bold tracking-tight text-center flex-1 pr-10">
+        <header className="flex-none bg-surface-light dark:bg-surface-dark shadow-sm z-10 sticky top-0 px-4 py-3 flex items-center justify-center border-b border-border-light dark:border-border-dark">
+          <h1 className="text-lg font-bold tracking-tight text-center">
             ลงทะเบียนลูกค้า
           </h1>
         </header>
-        {isMenuOpen ? (
-          <div className="fixed inset-0 z-40">
-            <button
-              type="button"
-              className="absolute inset-0 bg-black/40"
-              aria-label="Close menu"
-              onClick={() => setIsMenuOpen(false)}
-            />
-            <aside
-              id="customer-app-menu"
-              className="absolute left-0 top-0 h-full w-[290px] bg-surface-light dark:bg-surface-dark shadow-2xl p-5 flex flex-col gap-4"
-              role="dialog"
-              aria-modal="true"
-            >
-              <div className="flex items-center justify-between">
-                <div>
-                  <div className="text-xs uppercase tracking-[0.2em] text-text-secondary-light dark:text-text-secondary-dark">
-                    JJSATs
-                  </div>
-                  <div className="text-lg font-bold text-text-primary-light dark:text-text-primary-dark">
-                    Quotation
-                  </div>
-                </div>
-                <button
-                  type="button"
-                  className="flex items-center justify-center p-2 rounded-full hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors text-text-primary-light dark:text-text-primary-dark"
-                  aria-label="Close menu"
-                  onClick={() => setIsMenuOpen(false)}
-                >
-                  <span className="material-symbols-outlined text-[22px]">close</span>
-                </button>
-              </div>
-              {displayName ? (
-                <div className="rounded-xl border border-border-light dark:border-border-dark bg-background-light dark:bg-background-dark px-3 py-2 text-sm text-text-secondary-light dark:text-text-secondary-dark">
-                  เธเธธเธ“ {displayName}
-                </div>
-              ) : null}
-              <nav className="flex flex-col gap-2">
-                {primaryMenuItems.map((item) => {
-                  const isActive = item.href === activeHref;
-                  return (
-                    <Link
-                      key={item.id}
-                      href={item.href}
-                      className={`${menuItemBase} ${isActive ? menuItemActive : menuItemIdle}`}
-                      aria-current={isActive ? "page" : undefined}
-                      onClick={() => setIsMenuOpen(false)}
-                    >
-                      <span
-                        className={`material-symbols-outlined text-[20px] ${
-                          isActive ? "text-white" : "text-primary"
-                        }`}
-                      >
-                        {item.icon}
-                      </span>
-                      <span>{item.label}</span>
-                    </Link>
-                  );
-                })}
-              </nav>
-              {logoutMenuItem ? (
-                <div className="mt-auto">
-                  <Link
-                    href={logoutMenuItem.href}
-                    className={`${menuItemBase} ${menuItemIdle}`}
-                    onClick={() => setIsMenuOpen(false)}
-                  >
-                    <span className="material-symbols-outlined text-[20px] text-primary">
-                      {logoutMenuItem.icon}
-                    </span>
-                    <span>{logoutMenuItem.label}</span>
-                  </Link>
-                </div>
-              ) : null}
-
-            </aside>
-          </div>
-        ) : null}
-        <main className="flex-1 overflow-y-auto no-scrollbar p-4 pb-32">
+        <main className="flex-1 overflow-y-auto no-scrollbar p-4 pb-40">
           <form id="customerFormMobile" onSubmit={onSubmit} className="space-y-6">
             <section className="bg-surface-light dark:bg-surface-dark rounded-xl shadow-soft p-5 border border-transparent dark:border-border-dark">
               <div className="flex items-center gap-2 mb-4 text-primary">
@@ -744,7 +644,10 @@ export default function CustomerPage() {
             </section>
           </form>
         </main>
-        <footer className="fixed bottom-0 left-0 w-full bg-surface-light dark:bg-surface-dark border-t border-border-light dark:border-border-dark p-4 shadow-[0_-4px_20px_-4px_rgba(0,0,0,0.1)] z-20 safe-area-bottom">
+        <footer
+          className="fixed left-0 w-full bg-surface-light dark:bg-surface-dark border-t border-border-light dark:border-border-dark p-4 shadow-[0_-4px_20px_-4px_rgba(0,0,0,0.1)] z-20"
+          style={{ bottom: "calc(64px + env(safe-area-inset-bottom))" }}
+        >
           <div className="flex gap-3 max-w-lg mx-auto">
             <button
               type="button"
@@ -757,12 +660,41 @@ export default function CustomerPage() {
               type="submit"
               form="customerFormMobile"
               disabled={saving}
-              className="flex-1 py-3.5 px-4 rounded-lg font-bold text-white bg-primary hover:bg-primary-dark shadow-[0_10px_20px_rgba(0,124,138,0.3)] transition-all transform active:scale-[0.98]"
+              className="flex-1 py-3.5 px-4 rounded-lg font-bold text-white bg-primary hover:bg-primary-dark shadow-[0_10px_20px_rgba(116,16,16,0.3)] transition-all transform active:scale-[0.98]"
             >
               {saving ? "กำลังบันทึก…" : editingCustomerId ? "อัปเดตลูกค้า" : "บันทึกลูกค้า"}
             </button>
           </div>
         </footer>
+        <div
+          className="fixed bottom-0 left-0 w-full bg-white dark:bg-surface-dark border-t border-slate-100 dark:border-border-dark flex justify-around items-center py-2 px-6 z-30 lg:hidden"
+          style={{ paddingBottom: "env(safe-area-inset-bottom)", height: "64px" }}
+        >
+          {visibleMenuItems.map((item) => {
+            const isActive = item.href === activeHref;
+            return (
+              <Link
+                key={item.id}
+                href={item.href}
+                className={`flex flex-col items-center gap-1 ${
+                  isActive ? "text-primary" : "text-slate-400"
+                }`}
+                aria-current={isActive ? "page" : undefined}
+              >
+                <span
+                  className={`material-symbols-outlined text-[24px]${
+                    isActive ? " font-bold" : ""
+                  }`}
+                >
+                  {item.icon}
+                </span>
+                <span className={`text-[10px] ${isActive ? "font-bold" : "font-medium"}`}>
+                  {item.label}
+                </span>
+              </Link>
+            );
+          })}
+        </div>
       </div>
     </main>
   );

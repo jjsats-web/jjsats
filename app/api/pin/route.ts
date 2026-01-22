@@ -15,6 +15,21 @@ type PinRow = {
   signature_image: string | null;
 };
 
+function isLocalhost(hostname: string) {
+  return hostname === "localhost" || hostname === "127.0.0.1" || hostname === "::1";
+}
+
+function isSecureRequest(request: Request) {
+  const url = new URL(request.url);
+  const forwardedProto = request.headers
+    .get("x-forwarded-proto")
+    ?.split(",")[0]
+    ?.trim()
+    .toLowerCase();
+  const isSecureProtocol = url.protocol === "https:" || forwardedProto === "https";
+  return isSecureProtocol && !isLocalhost(url.hostname);
+}
+
 export async function POST(request: Request) {
   let pin = "";
   try {
@@ -49,22 +64,23 @@ export async function POST(request: Request) {
     }
 
     const role = data?.role === "admin" ? "admin" : "user";
-    const res = NextResponse.json({ ok: true });
-    res.cookies.set(PIN_COOKIE, pin, {
+    const isSecure = isSecureRequest(request);
+    const cookieStore = await cookies();
+    cookieStore.set(PIN_COOKIE, pin, {
       httpOnly: true,
       sameSite: "lax",
       path: "/",
-      secure: process.env.NODE_ENV === "production",
+      secure: isSecure,
       maxAge: 60 * 60, // 1 hour
     });
-    res.cookies.set(ROLE_COOKIE, role, {
+    cookieStore.set(ROLE_COOKIE, role, {
       httpOnly: true,
       sameSite: "lax",
       path: "/",
-      secure: process.env.NODE_ENV === "production",
+      secure: isSecure,
       maxAge: 60 * 60, // 1 hour
     });
-    return res;
+    return NextResponse.json({ ok: true });
   } catch (error) {
     const message = error instanceof Error ? error.message : "เกิดข้อผิดพลาด";
     return NextResponse.json({ error: message }, { status: 500 });
