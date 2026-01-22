@@ -5,6 +5,7 @@ import { useSearchParams } from "next/navigation";
 import type { FormEvent } from "react";
 import { Suspense, useCallback, useEffect, useMemo, useRef, useState } from "react";
 import swal from "sweetalert";
+import Icon, { type IconName } from "@/components/Icon";
 import LineItemsTable, { LineItem } from "@/components/LineItemsTable";
 import QuoteForm, { QuoteFormData } from "@/components/QuoteForm";
 import { formatCurrency, formatCurrencyPlain } from "@/lib/format";
@@ -55,7 +56,7 @@ type MenuItem = {
   id: string;
   href: string;
   label: string;
-  icon: string;
+  icon: IconName;
   adminOnly?: boolean;
 };
 
@@ -1738,13 +1739,7 @@ function HomePageClient() {
               }`}
               aria-current={isActive ? "page" : undefined}
             >
-              <span
-                className={`material-symbols-outlined text-[24px]${
-                  isActive ? " font-bold" : ""
-                }`}
-              >
-                {item.icon}
-              </span>
+              <Icon name={item.icon} className="h-6 w-6" bold={isActive} />
               <span className={`text-[10px] ${isActive ? "font-bold" : "font-medium"}`}>
                 {item.label}
               </span>

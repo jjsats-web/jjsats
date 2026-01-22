@@ -4,6 +4,7 @@ import Image from "next/image";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
+import Icon, { type IconName } from "@/components/Icon";
 
 const PIN_LENGTH = 6;
 const MAX_SIGNATURE_SIZE = 1024 * 1024;
@@ -12,7 +13,7 @@ type MenuItem = {
   id: string;
   href: string;
   label: string;
-  icon: string;
+  icon: IconName;
   adminOnly?: boolean;
 };
 
@@ -288,13 +289,7 @@ export default function PinRegisterPage() {
               }`}
               aria-current={isActive ? "page" : undefined}
             >
-              <span
-                className={`material-symbols-outlined text-[24px]${
-                  isActive ? " font-bold" : ""
-                }`}
-              >
-                {item.icon}
-              </span>
+              <Icon name={item.icon} className="h-6 w-6" bold={isActive} />
               <span className={`text-[10px] ${isActive ? "font-bold" : "font-medium"}`}>
                 {item.label}
               </span>

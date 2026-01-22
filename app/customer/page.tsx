@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import Icon, { type IconName } from "@/components/Icon";
 import type { FormEvent } from "react";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import swal from "sweetalert";
@@ -64,7 +65,7 @@ type MenuItem = {
   id: string;
   href: string;
   label: string;
-  icon: string;
+  icon: IconName;
   adminOnly?: boolean;
 };
 
@@ -547,7 +548,7 @@ export default function CustomerPage() {
           <form id="customerFormMobile" onSubmit={onSubmit} className="space-y-6">
             <section className="bg-surface-light dark:bg-surface-dark rounded-xl shadow-soft p-5 border border-transparent dark:border-border-dark">
               <div className="flex items-center gap-2 mb-4 text-primary">
-                <span className="material-symbols-outlined text-[20px]">person</span>
+                <Icon name="person" className="h-5 w-5" />
                 <h3 className="font-bold text-lg text-text-primary-light dark:text-text-primary-dark">
                   ข้อมูลลูกค้า
                 </h3>
@@ -681,13 +682,7 @@ export default function CustomerPage() {
                 }`}
                 aria-current={isActive ? "page" : undefined}
               >
-                <span
-                  className={`material-symbols-outlined text-[24px]${
-                    isActive ? " font-bold" : ""
-                  }`}
-                >
-                  {item.icon}
-                </span>
+                <Icon name={item.icon} className="h-6 w-6" bold={isActive} />
                 <span className={`text-[10px] ${isActive ? "font-bold" : "font-medium"}`}>
                   {item.label}
                 </span>

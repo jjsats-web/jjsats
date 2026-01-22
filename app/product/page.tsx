@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import Icon, { type IconName } from "@/components/Icon";
 import type { FormEvent } from "react";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import swal from "sweetalert";
@@ -30,7 +31,7 @@ type MenuItem = {
   id: string;
   href: string;
   label: string;
-  icon: string;
+  icon: IconName;
   adminOnly?: boolean;
 };
 type SwalIcon = "success" | "error" | "warning" | "info" | "question";
@@ -564,13 +565,7 @@ export default function ProductPage() {
               }`}
               aria-current={isActive ? "page" : undefined}
             >
-              <span
-                className={`material-symbols-outlined text-[24px]${
-                  isActive ? " font-bold" : ""
-                }`}
-              >
-                {item.icon}
-              </span>
+              <Icon name={item.icon} className="h-6 w-6" bold={isActive} />
               <span className={`text-[10px] ${isActive ? "font-bold" : "font-medium"}`}>
                 {item.label}
               </span>
