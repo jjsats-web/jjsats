@@ -24,6 +24,7 @@ type MenuItem = {
   label: string;
   icon: IconName;
   adminOnly?: boolean;
+  prefetch?: boolean;
 };
 
 type PinDraft = {
@@ -79,7 +80,13 @@ export default function PinManagePage() {
       icon: "password",
       adminOnly: true,
     },
-    { id: "logout", href: "/logout", label: "ออกจากระบบ", icon: "logout" },
+    {
+      id: "logout",
+      href: "/logout",
+      label: "ออกจากระบบ",
+      icon: "logout",
+      prefetch: false,
+    },
   ];
   const visibleMenuItems =
     pinProfile.role === "admin"
@@ -441,6 +448,7 @@ export default function PinManagePage() {
             <Link
               key={item.id}
               href={item.href}
+              prefetch={item.prefetch}
               className={`flex flex-col items-center gap-1 ${
                 isActive ? "text-primary" : "text-slate-400"
               }`}

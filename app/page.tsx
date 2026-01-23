@@ -58,6 +58,7 @@ type MenuItem = {
   label: string;
   icon: IconName;
   adminOnly?: boolean;
+  prefetch?: boolean;
 };
 
 type PriceTier = "dealer" | "project" | "user";
@@ -227,7 +228,13 @@ function HomePageClient() {
       icon: "password",
       adminOnly: true,
     },
-    { id: "logout", href: "/logout", label: "ออกจากระบบ", icon: "logout" },
+    {
+      id: "logout",
+      href: "/logout",
+      label: "ออกจากระบบ",
+      icon: "logout",
+      prefetch: false,
+    },
   ];
   const visibleMenuItems =
     pinProfile.role === "admin"
@@ -1317,6 +1324,7 @@ function HomePageClient() {
             <Link
               key={item.id}
               href={item.href}
+              prefetch={item.prefetch}
               className={item.href === activeHref ? "active" : undefined}
               aria-current={item.href === activeHref ? "page" : undefined}
             >
@@ -1734,6 +1742,7 @@ function HomePageClient() {
             <Link
               key={item.id}
               href={item.href}
+              prefetch={item.prefetch}
               className={`flex flex-col items-center gap-1 ${
                 isActive ? "text-primary" : "text-slate-400"
               }`}

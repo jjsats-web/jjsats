@@ -1,5 +1,10 @@
 ﻿import type { Metadata, Viewport } from "next";
-import { Geist_Mono, Kanit } from "next/font/google";
+import {
+  Geist_Mono,
+  Kanit,
+  Manrope,
+  Noto_Sans_Thai,
+} from "next/font/google";
 import ServiceWorkerRegister from "@/components/ServiceWorkerRegister";
 import "./globals.css";
 
@@ -12,6 +17,18 @@ const kanit = Kanit({
 const geistMono = Geist_Mono({
   variable: "--font-geist-mono",
   subsets: ["latin"],
+});
+
+const manrope = Manrope({
+  variable: "--font-manrope",
+  subsets: ["latin"],
+  weight: ["400", "500", "600", "700", "800"],
+});
+
+const notoSansThai = Noto_Sans_Thai({
+  variable: "--font-noto-sans-thai",
+  subsets: ["latin", "thai"],
+  weight: ["300", "400", "500", "600", "700"],
 });
 
 export const metadata: Metadata = {
@@ -45,19 +62,9 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="th">
-      <head>
-        <link rel="preconnect" href="https://fonts.googleapis.com" />
-        <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
-        <link
-          rel="stylesheet"
-          href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&family=Noto+Sans+Thai:wght@300;400;500;600;700&display=swap"
-        />
-        <link
-          rel="stylesheet"
-          href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght@100..700&display=swap"
-        />
-      </head>
-      <body className={`${kanit.variable} ${geistMono.variable} antialiased`}>
+      <body
+        className={`${kanit.variable} ${geistMono.variable} ${manrope.variable} ${notoSansThai.variable} antialiased`}
+      >
         <ServiceWorkerRegister />
         {children}
       </body>

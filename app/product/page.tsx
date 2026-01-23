@@ -3,7 +3,7 @@
 import Link from "next/link";
 import Icon, { type IconName } from "@/components/Icon";
 import type { FormEvent } from "react";
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import swal from "sweetalert";
 
 type Product = {
@@ -33,6 +33,7 @@ type MenuItem = {
   label: string;
   icon: IconName;
   adminOnly?: boolean;
+  prefetch?: boolean;
 };
 type SwalIcon = "success" | "error" | "warning" | "info" | "question";
 
@@ -71,6 +72,8 @@ export default function ProductPage() {
   const [saving, setSaving] = useState(false);
   const [loadError, setLoadError] = useState("");
   const [saveError, setSaveError] = useState("");
+  const [isMobile, setIsMobile] = useState(false);
+  const formRef = useRef<HTMLFormElement | null>(null);
   const [pinProfile, setPinProfile] = useState<PinProfile>({
     firstName: "",
     lastName: "",
@@ -102,7 +105,13 @@ export default function ProductPage() {
       icon: "password",
       adminOnly: true,
     },
-    { id: "logout", href: "/logout", label: "ออกจากระบบ", icon: "logout" },
+    {
+      id: "logout",
+      href: "/logout",
+      label: "ออกจากระบบ",
+      icon: "logout",
+      prefetch: false,
+    },
   ];
   const visibleMenuItems =
     pinProfile.role === "admin"
@@ -184,6 +193,24 @@ export default function ProductPage() {
       }
     };
     void loadProfile();
+  }, []);
+
+  useEffect(() => {
+    const media = window.matchMedia("(max-width: 720px)");
+    const update = (event?: MediaQueryListEvent) => {
+      setIsMobile(event ? event.matches : media.matches);
+    };
+    update();
+    if ("addEventListener" in media) {
+      media.addEventListener("change", update);
+      return () => media.removeEventListener("change", update);
+    }
+    const legacyMedia = media as MediaQueryList & {
+      addListener?: (listener: (event: MediaQueryListEvent) => void) => void;
+      removeListener?: (listener: (event: MediaQueryListEvent) => void) => void;
+    };
+    legacyMedia.addListener?.(update);
+    return () => legacyMedia.removeListener?.(update);
   }, []);
 
   const resetForm = () => {
@@ -323,6 +350,13 @@ export default function ProductPage() {
     }
   };
 
+  const handleMobileChoose = (product: Product) => {
+    startEdit(product);
+    requestAnimationFrame(() => {
+      formRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
+    });
+  };
+
   const emptyText = useMemo(() => {
     if (!products.length && loading) return "กำลังโหลดรายการสินค้า…";
     if (!products.length) return "ยังไม่มีสินค้า";
@@ -341,7 +375,12 @@ export default function ProductPage() {
           เพิ่มสินค้ามาตรฐานไว้ใช้ดึงเข้าหน้าใบเสนอราคาได้ทันที
         </p>
 
-        <form id="productForm" onSubmit={onSubmit} style={{ marginBottom: "1.2rem" }}>
+        <form
+          id="productForm"
+          onSubmit={onSubmit}
+          style={{ marginBottom: "1.2rem" }}
+          ref={formRef}
+        >
           <div className="grid" style={{ gridTemplateColumns: "repeat(2, minmax(0, 1fr))" }}>
             <div>
               <label htmlFor="productName">ชื่อสินค้า*</label>
@@ -466,75 +505,102 @@ export default function ProductPage() {
         {loadError ? (
           <div style={{ marginBottom: ".75rem", color: "#b91c1c" }}>{loadError}</div>
         ) : null}
-        <table className="table" id="productTable">
-          <thead>
-            <tr>
-              <th>ชื่อสินค้า</th>
-              <th>ราคา</th>
-              <th>หน่วย</th>
-              <th>รหัส</th>
-              <th></th>
-            </tr>
-          </thead>
-          <tbody>
+        {isMobile ? (
+          <div className="product-mobile-list">
             {emptyText ? (
-              <tr>
-                <td
-                  colSpan={5}
-                  style={{
-                    textAlign: "center",
-                    color: "#94a3b8",
-                    padding: "1rem",
-                  }}
-                >
-                  {emptyText}
-                </td>
-              </tr>
-            ) : null}
-            {products.map((product) => (
-              <tr key={product.id}>
-                <td>
-                  <div>
-                    <strong>{product.name}</strong>
-                  </div>
-                  <div style={{ color: "#94a3b8", fontSize: ".9rem" }}>
-                    {product.description || ""}
-                  </div>
-                </td>
-                <td>
-                  <div style={{ display: "grid", gap: ".15rem" }}>
-                    <div>Dealer: {priceFormatter.format(Number(product.dealerPrice || 0))}</div>
-                    <div>Project: {priceFormatter.format(Number(product.projectPrice || 0))}</div>
-                    <div>User: {priceFormatter.format(Number(product.userPrice || 0))}</div>
-                  </div>
-                </td>
-                <td>{product.unit || "-"}</td>
-                <td>{product.sku || "-"}</td>
-                <td style={{ textAlign: "right" }}>
-                  <div style={{ display: "flex", gap: ".45rem", justifyContent: "flex-end" }}>
+              <div className="product-mobile-empty">{emptyText}</div>
+            ) : (
+              products.map((product) => (
+                <div key={product.id} className="product-mobile-card">
+                  <div className="product-mobile-card__name">{product.name}</div>
+                  <div className="product-mobile-card__actions">
                     <button
                       type="button"
                       className="ghost-link"
-                      style={{ border: "none", padding: ".45rem .7rem" }}
-                      onClick={() => startEdit(product)}
+                      onClick={() => handleMobileChoose(product)}
                     >
-                      แก้ไข
-                    </button>
-                    <button
-                      type="button"
-                      className="remove"
-                      style={{ border: "none", padding: ".45rem .7rem" }}
-                      onClick={() => void onDelete(product.id)}
-                      disabled={saving}
-                    >
-                      ลบ
+                      เลือก
                     </button>
                   </div>
-                </td>
+                </div>
+              ))
+            )}
+          </div>
+        ) : (
+          <table className="table" id="productTable">
+            <thead>
+              <tr>
+                <th>ชื่อสินค้า</th>
+                <th>ราคา</th>
+                <th>หน่วย</th>
+                <th>รหัส</th>
+                <th></th>
               </tr>
-            ))}
-          </tbody>
-        </table>
+            </thead>
+            <tbody>
+              {emptyText ? (
+                <tr>
+                  <td
+                    colSpan={5}
+                    style={{
+                      textAlign: "center",
+                      color: "#94a3b8",
+                      padding: "1rem",
+                    }}
+                  >
+                    {emptyText}
+                  </td>
+                </tr>
+              ) : null}
+              {products.map((product) => (
+                <tr key={product.id}>
+                  <td>
+                    <div>
+                      <strong>{product.name}</strong>
+                    </div>
+                    <div style={{ color: "#94a3b8", fontSize: ".9rem" }}>
+                      {product.description || ""}
+                    </div>
+                  </td>
+                  <td>
+                    <div style={{ display: "grid", gap: ".15rem" }}>
+                      <div>
+                        Dealer: {priceFormatter.format(Number(product.dealerPrice || 0))}
+                      </div>
+                      <div>
+                        Project: {priceFormatter.format(Number(product.projectPrice || 0))}
+                      </div>
+                      <div>User: {priceFormatter.format(Number(product.userPrice || 0))}</div>
+                    </div>
+                  </td>
+                  <td>{product.unit || "-"}</td>
+                  <td>{product.sku || "-"}</td>
+                  <td style={{ textAlign: "right" }}>
+                    <div style={{ display: "flex", gap: ".45rem", justifyContent: "flex-end" }}>
+                      <button
+                        type="button"
+                        className="ghost-link"
+                        style={{ border: "none", padding: ".45rem .7rem" }}
+                        onClick={() => startEdit(product)}
+                      >
+                        แก้ไข
+                      </button>
+                      <button
+                        type="button"
+                        className="remove"
+                        style={{ border: "none", padding: ".45rem .7rem" }}
+                        onClick={() => void onDelete(product.id)}
+                        disabled={saving}
+                      >
+                        ลบ
+                      </button>
+                    </div>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        )}
       </div>
       <svg className="blob-button__svg" aria-hidden="true" xmlns="http://www.w3.org/2000/svg">
         <defs>
@@ -560,6 +626,7 @@ export default function ProductPage() {
             <Link
               key={item.id}
               href={item.href}
+              prefetch={item.prefetch}
               className={`flex flex-col items-center gap-1 ${
                 isActive ? "text-primary" : "text-slate-400"
               }`}
