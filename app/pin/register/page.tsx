@@ -5,10 +5,10 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 import Icon, { type IconName } from "@/components/Icon";
+import { usePinRole } from "@/components/PinRoleProvider";
 
 const PIN_LENGTH = 6;
 const MAX_SIGNATURE_SIZE = 1024 * 1024;
-type PinProfile = { firstName: string; lastName: string; role: "admin" | "user" };
 type MenuItem = {
   id: string;
   href: string;
@@ -28,11 +28,7 @@ export default function PinRegisterPage() {
   const [role, setRole] = useState<"admin" | "user">("user");
   const [error, setError] = useState("");
   const [pending, setPending] = useState(false);
-  const [pinProfile, setPinProfile] = useState<PinProfile>({
-    firstName: "",
-    lastName: "",
-    role: "user",
-  });
+  const { role: navRole, setRole: setNavRole } = usePinRole();
   const activeHref = "/pin/register";
   const menuItems: MenuItem[] = [
     { id: "quote", href: "/", label: "ใบเสนอราคา", icon: "description" },
@@ -67,9 +63,7 @@ export default function PinRegisterPage() {
     },
   ];
   const visibleMenuItems =
-    pinProfile.role === "admin"
-      ? menuItems
-      : menuItems.filter((item) => !item.adminOnly);
+    navRole === "admin" ? menuItems : menuItems.filter((item) => !item.adminOnly);
   const actionStyle = {
     display: "inline-flex",
     justifyContent: "center",
@@ -87,17 +81,14 @@ export default function PinRegisterPage() {
           error?: string;
         };
         if (!res.ok || !data || "error" in data) return;
-        setPinProfile({
-          firstName: data.firstName?.trim() ?? "",
-          lastName: data.lastName?.trim() ?? "",
-          role: data.role === "admin" ? "admin" : "user",
-        });
+        const role = data.role === "admin" ? "admin" : "user";
+        setNavRole(role);
       } catch {
         // ignore
       }
     };
     void loadProfile();
-  }, []);
+  }, [setNavRole]);
 
   const handleSignatureChange = (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];

@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import Icon, { type IconName } from "@/components/Icon";
+import { usePinRole } from "@/components/PinRoleProvider";
 import type { FormEvent } from "react";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import swal from "sweetalert";
@@ -76,6 +77,7 @@ export default function CustomerPage() {
   const [saving, setSaving] = useState(false);
   const [loading, setLoading] = useState(true);
   const [editingCustomerId, setEditingCustomerId] = useState<string | null>(null);
+  const { role, setRole } = usePinRole();
   const [pinProfile, setPinProfile] = useState<PinProfile>({
     firstName: "",
     lastName: "",
@@ -123,12 +125,17 @@ export default function CustomerPage() {
       address: customer.address,
       approxPurchaseDate: customer.approxPurchaseDate,
     });
-    document.getElementById("customerForm")?.scrollIntoView({ behavior: "smooth", block: "start" });
+    const isMobile = window.matchMedia("(max-width: 768px)").matches;
+    const formId = isMobile ? "customerFormMobile" : "customerForm";
+    document.getElementById(formId)?.scrollIntoView({ behavior: "smooth", block: "start" });
   }, []);
 
   const cancelEdit = useCallback(() => {
     setEditingCustomerId(null);
     setDraft(initialDraft);
+    const isMobile = window.matchMedia("(max-width: 768px)").matches;
+    const formId = isMobile ? "customerFormMobile" : "customerForm";
+    document.getElementById(formId)?.scrollIntoView({ behavior: "smooth", block: "start" });
   }, []);
 
   useEffect(() => {
@@ -146,17 +153,19 @@ export default function CustomerPage() {
           error?: string;
         };
         if (!res.ok || !data || "error" in data) return;
+        const role = data.role === "admin" ? "admin" : "user";
         setPinProfile({
           firstName: data.firstName?.trim() ?? "",
           lastName: data.lastName?.trim() ?? "",
-          role: data.role === "admin" ? "admin" : "user",
+          role,
         });
+        setRole(role);
       } catch {
         // ignore
       }
     };
     void loadProfile();
-  }, []);
+  }, [setRole]);
   const onSubmit = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
 
@@ -200,7 +209,9 @@ export default function CustomerPage() {
       setDraft(initialDraft);
       await loadList();
       await showModal(wasEditing ? "Customer updated" : "บันทึกข้อมูลลูกค้าแล้ว", "success");
-      document.getElementById("list")?.scrollIntoView({ behavior: "smooth", block: "start" });
+      const isMobile = window.matchMedia("(max-width: 768px)").matches;
+      const listId = isMobile ? "listMobile" : "list";
+      document.getElementById(listId)?.scrollIntoView({ behavior: "smooth", block: "start" });
     } catch {
       await showModal("เกิดข้อผิดพลาด", "error");
     } finally {
@@ -262,9 +273,7 @@ export default function CustomerPage() {
     },
   ];
   const visibleMenuItems =
-    pinProfile.role === "admin"
-      ? menuItems
-      : menuItems.filter((item) => !item.adminOnly);
+    role === "admin" ? menuItems : menuItems.filter((item) => !item.adminOnly);
 
   const recentActions = useMemo<RecentAction[]>(() => {
     if (loading || !customers.length) return [];
@@ -651,6 +660,59 @@ export default function CustomerPage() {
               </div>
             </section>
           </form>
+          <section className="mt-6 space-y-3" id="listMobile">
+            <div className="flex items-center justify-between">
+              <h2 className="text-base font-semibold text-text-primary-light dark:text-text-primary-dark">
+                รายชื่อลูกค้า
+              </h2>
+              <span className="text-xs text-text-secondary-light dark:text-text-secondary-dark">
+                {loading ? "กำลังโหลด..." : `${customers.length} รายการ`}
+              </span>
+            </div>
+            {emptyState ? (
+              <div className="rounded-xl border border-dashed border-border-light dark:border-border-dark bg-surface-light dark:bg-surface-dark p-4 text-sm text-text-secondary-light dark:text-text-secondary-dark">
+                {emptyState}
+              </div>
+            ) : null}
+            {customers.map((customer) => {
+              const display = customer.companyName.trim() || "(ไม่ระบุชื่อ)";
+              const secondary = [customer.contactName, customer.contactPhone]
+                .filter(Boolean)
+                .join(" · ");
+              return (
+                <div
+                  key={customer.id}
+                  className="bg-surface-light dark:bg-surface-dark rounded-xl border border-border-light dark:border-border-dark p-4 shadow-soft"
+                >
+                  <div className="space-y-1">
+                    <div className="font-semibold text-text-primary-light dark:text-text-primary-dark">
+                      {display}
+                    </div>
+                    {secondary ? (
+                      <div className="text-sm text-text-secondary-light dark:text-text-secondary-dark">
+                        {secondary}
+                      </div>
+                    ) : null}
+                  </div>
+                  <div className="mt-3 grid grid-cols-2 gap-2">
+                    <Link
+                      href={`/?customer=${encodeURIComponent(customer.id)}`}
+                      className="inline-flex items-center justify-center rounded-lg bg-primary text-white py-2.5 text-sm font-semibold shadow-[0_8px_16px_rgba(116,16,16,0.2)]"
+                    >
+                      เลือก
+                    </Link>
+                    <button
+                      type="button"
+                      className="inline-flex items-center justify-center rounded-lg border border-border-light dark:border-border-dark bg-background-light dark:bg-background-dark py-2.5 text-sm font-semibold text-text-secondary-light dark:text-text-secondary-dark"
+                      onClick={() => beginEdit(customer)}
+                    >
+                      แก้ไข
+                    </button>
+                  </div>
+                </div>
+              );
+            })}
+          </section>
         </main>
         <footer
           className="fixed left-0 w-full bg-surface-light dark:bg-surface-dark border-t border-border-light dark:border-border-dark p-4 shadow-[0_-4px_20px_-4px_rgba(0,0,0,0.1)] z-20"

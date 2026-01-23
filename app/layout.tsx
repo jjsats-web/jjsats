@@ -5,7 +5,9 @@ import {
   Manrope,
   Noto_Sans_Thai,
 } from "next/font/google";
+import { cookies } from "next/headers";
 import ServiceWorkerRegister from "@/components/ServiceWorkerRegister";
+import PinRoleProvider from "@/components/PinRoleProvider";
 import "./globals.css";
 
 const kanit = Kanit({
@@ -55,18 +57,24 @@ export const viewport: Viewport = {
   themeColor: "#741010",
 };
 
-export default function RootLayout({
+export default async function RootLayout({
   children,
 }: Readonly<{
   children: React.ReactNode;
 }>) {
+  const cookieStore = await cookies();
+  const roleCookie = cookieStore.get("pin_role")?.value;
+  const initialRole = roleCookie === "admin" ? "admin" : "user";
+
   return (
     <html lang="th">
       <body
         className={`${kanit.variable} ${geistMono.variable} ${manrope.variable} ${notoSansThai.variable} antialiased`}
       >
-        <ServiceWorkerRegister />
-        {children}
+        <PinRoleProvider initialRole={initialRole}>
+          <ServiceWorkerRegister />
+          {children}
+        </PinRoleProvider>
       </body>
     </html>
   );

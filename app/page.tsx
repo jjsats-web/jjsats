@@ -7,6 +7,7 @@ import { Suspense, useCallback, useEffect, useMemo, useRef, useState } from "rea
 import swal from "sweetalert";
 import Icon, { type IconName } from "@/components/Icon";
 import LineItemsTable, { LineItem } from "@/components/LineItemsTable";
+import { usePinRole } from "@/components/PinRoleProvider";
 import QuoteForm, { QuoteFormData } from "@/components/QuoteForm";
 import { formatCurrency, formatCurrencyPlain } from "@/lib/format";
 
@@ -196,6 +197,7 @@ function HomePageClient() {
   const [quoteHistoryError, setQuoteHistoryError] = useState("");
   const [quoteHistoryLoading, setQuoteHistoryLoading] = useState(true);
   const [saving, setSaving] = useState(false);
+  const { role, setRole } = usePinRole();
   const [pinProfile, setPinProfile] = useState<PinProfile>({
     firstName: "",
     lastName: "",
@@ -237,9 +239,7 @@ function HomePageClient() {
     },
   ];
   const visibleMenuItems =
-    pinProfile.role === "admin"
-      ? menuItems
-      : menuItems.filter((item) => !item.adminOnly);
+    role === "admin" ? menuItems : menuItems.filter((item) => !item.adminOnly);
 
   const [approvalBusyId, setApprovalBusyId] = useState<string | null>(null);
   const [approvalStatusById, setApprovalStatusById] = useState<
@@ -412,18 +412,20 @@ function HomePageClient() {
           error?: string;
         };
         if (!res.ok || !data || "error" in data) return;
+        const role = data.role === "admin" ? "admin" : "user";
         setPinProfile({
           firstName: data.firstName?.trim() ?? "",
           lastName: data.lastName?.trim() ?? "",
-          role: data.role === "admin" ? "admin" : "user",
+          role,
           signatureImage: data.signatureImage?.trim() ?? "",
         });
+        setRole(role);
       } catch {
         // ignore
       }
     };
     void loadProfile();
-  }, []);
+  }, [setRole]);
 
   useEffect(() => {
     if (!customerId) return;
@@ -1316,7 +1318,7 @@ function HomePageClient() {
     };
 
   return (
-    <main className="pb-24 lg:pb-0">
+    <main className="pb-24 lg:pb-0 quote-page">
       <header className="topbar">
         <div className="topbar__brand">JJSATs Quotation</div>
         <nav className="app-nav-hidden">
@@ -1344,18 +1346,21 @@ function HomePageClient() {
           <h1>สร้างใบเสนอราคา JJSATs</h1>
         </div>
 
-        <form onSubmit={onSubmit} className="quote-form">
-          <QuoteForm
-            value={form}
-            onChange={handleFormChange}
-            companyDisabled
-            systemDisabled={!customerId}
-          />
+        <form id="quoteForm" onSubmit={onSubmit} className="quote-form">
+          <section className="quote-section">
+            <QuoteForm
+              value={form}
+              onChange={handleFormChange}
+              companyDisabled
+              systemDisabled={!customerId}
+            />
+          </section>
 
-          <div
-            className="catalog-bar"
-            style={{ flexDirection: "column", alignItems: "stretch" }}
-          >
+          <section className="quote-section">
+            <div
+              className="catalog-bar"
+              style={{ flexDirection: "column", alignItems: "stretch" }}
+            >
             <div
               style={{
                 width: "100%",
@@ -1430,13 +1435,7 @@ function HomePageClient() {
               </div>
               <div className="catalog-bar__actions" style={{ alignItems: "flex-end" }}>
                 <div
-                  style={{
-                    display: "flex",
-                    flexDirection: "column",
-                    gap: ".3rem",
-                    minWidth: "220px",
-                    flex: "0 0 220px",
-                  }}
+                  className="catalog-bar__tier"
                 >
                   <label htmlFor="priceTier" style={{ color: "var(--muted)", fontWeight: 600 }}>
                     ราคา
@@ -1474,9 +1473,8 @@ function HomePageClient() {
                 </div>
                 <button
                   type="button"
-                  className="ghost"
                   onClick={addPendingSelection}
-                  style={{ width: "200px" }}
+                  className="ghost catalog-bar__action-button"
                 >
                   + เลือกสินค้า
                 </button>
@@ -1510,13 +1508,7 @@ function HomePageClient() {
               </div>
               <div className="catalog-bar__actions" style={{ alignItems: "flex-end" }}>
                 <div
-                  style={{
-                    display: "flex",
-                    flexDirection: "column",
-                    gap: ".3rem",
-                    minWidth: "220px",
-                    flex: "0 0 220px",
-                  }}
+                  className="catalog-bar__tier"
                 >
                   <label htmlFor="customPrice" style={{ color: "var(--muted)", fontWeight: 600 }}>
                     ราคา
@@ -1540,79 +1532,83 @@ function HomePageClient() {
                 </div>
                 <button
                   type="button"
-                  className="ghost"
+                  className="ghost catalog-bar__action-button"
                   onClick={addCustomItem}
-                  style={{ width: "200px" }}
                 >
                   + เพิ่มสินค้าอื่นๆ
                 </button>
               </div>
             </div>
-          </div>
-
-          <h2>ประวัติใบเสนอราคา</h2>
-          <LineItemsTable
-            items={items}
-            onChangeItem={handleItemChange}
-            onRemoveItem={removeItem}
-          />
-
-          <div className="totals">
-            <div className="totals__row">
-              ยอดรวมรายการ: <span>{formatCurrency(totals.subtotal)}</span>
             </div>
-            <label className="totals__row totals__discount">
-              <span>ส่วนลด:</span>
-              <input
-                id="discount"
-                name="discount"
-                type="number"
-                inputMode="decimal"
-                min="0"
-                step="0.01"
-                value={discountInput}
-                onChange={(e) => setDiscountInput(e.target.value)}
-              />
-            </label>
-            <div className="totals__row">
-              <strong>
-                รวมทั้งสิ้น: <span>{formatCurrency(totals.total)}</span>
-              </strong>
-            </div>
-          </div>
+          </section>
 
-          <div className="form-block">
-            <div className="row">
-              <label htmlFor="quoteNote">หมายเหตุ</label>
-              <textarea
-                id="quoteNote"
-                name="quoteNote"
-                rows={3}
-                value={note}
-                onChange={(e) => setNote(e.target.value)}
-                placeholder="เช่น ระยะเวลาส่งมอบ, เงื่อนไขเพิ่มเติม"
-              />
-            </div>
-          </div>
+          <section className="quote-section">
+            <h2>รายการสินค้า</h2>
+            <LineItemsTable
+              items={items}
+              onChangeItem={handleItemChange}
+              onRemoveItem={removeItem}
+            />
+          </section>
 
-          <div className="actions center">
-            <button type="submit" disabled={saving} className="blob-button">
-              <span className="blob-button__text">
-                {saving ? "กำลังบันทึก..." : "บันทึกใบเสนอราคา"}
-              </span>
-              <span className="blob-button__inner" aria-hidden="true">
-                <span className="blob-button__blobs">
-                  <span className="blob-button__blob" />
-                  <span className="blob-button__blob" />
-                  <span className="blob-button__blob" />
-                  <span className="blob-button__blob" />
+          <section className="quote-section">
+            <div className="totals">
+              <div className="totals__row">
+                ยอดรวมรายการ: <span>{formatCurrency(totals.subtotal)}</span>
+              </div>
+              <label className="totals__row totals__discount">
+                <span>ส่วนลด:</span>
+                <input
+                  id="discount"
+                  name="discount"
+                  type="number"
+                  inputMode="decimal"
+                  min="0"
+                  step="0.01"
+                  value={discountInput}
+                  onChange={(e) => setDiscountInput(e.target.value)}
+                />
+              </label>
+              <div className="totals__row">
+                <strong>
+                  รวมทั้งสิ้น: <span>{formatCurrency(totals.total)}</span>
+                </strong>
+              </div>
+            </div>
+
+            <div className="form-block">
+              <div className="row">
+                <label htmlFor="quoteNote">หมายเหตุ</label>
+                <textarea
+                  id="quoteNote"
+                  name="quoteNote"
+                  rows={3}
+                  value={note}
+                  onChange={(e) => setNote(e.target.value)}
+                  placeholder="เช่น ระยะเวลาส่งมอบ, เงื่อนไขเพิ่มเติม"
+                />
+              </div>
+            </div>
+
+            <div className="actions center quote-actions">
+              <button type="submit" disabled={saving} className="blob-button">
+                <span className="blob-button__text">
+                  {saving ? "กำลังบันทึก..." : "บันทึกใบเสนอราคา"}
                 </span>
-              </span>
-            </button>
-          </div>
+                <span className="blob-button__inner" aria-hidden="true">
+                  <span className="blob-button__blobs">
+                    <span className="blob-button__blob" />
+                    <span className="blob-button__blob" />
+                    <span className="blob-button__blob" />
+                    <span className="blob-button__blob" />
+                  </span>
+                </span>
+              </button>
+            </div>
+          </section>
         </form>
 
-        <section id="history">
+        <section id="history" className="quote-section">
           <h2>ประวัติใบเสนอราคา</h2>
           {quoteHistoryError ? (
             <div style={{ color: "#b91c1c", marginBottom: ".6rem" }}>
@@ -1717,6 +1713,26 @@ function HomePageClient() {
             })}
           </div>
         </section>
+        <div className="quote-mobile-actions">
+          <button
+            type="submit"
+            form="quoteForm"
+            disabled={saving}
+            className="blob-button quote-mobile-actions__button"
+          >
+            <span className="blob-button__text">
+              {saving ? "กำลังบันทึก..." : "บันทึกใบเสนอราคา"}
+            </span>
+            <span className="blob-button__inner" aria-hidden="true">
+              <span className="blob-button__blobs">
+                <span className="blob-button__blob" />
+                <span className="blob-button__blob" />
+                <span className="blob-button__blob" />
+                <span className="blob-button__blob" />
+              </span>
+            </span>
+          </button>
+        </div>
       </div>
       <svg className="blob-button__svg" aria-hidden="true" xmlns="http://www.w3.org/2000/svg">
         <defs>

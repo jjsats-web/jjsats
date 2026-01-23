@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import Icon, { type IconName } from "@/components/Icon";
+import { usePinRole } from "@/components/PinRoleProvider";
 import type { FormEvent } from "react";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import swal from "sweetalert";
@@ -26,7 +27,6 @@ type ProductDraft = {
   userPrice: string;
   description: string;
 };
-type PinProfile = { firstName: string; lastName: string; role: "admin" | "user" };
 type MenuItem = {
   id: string;
   href: string;
@@ -72,13 +72,9 @@ export default function ProductPage() {
   const [saving, setSaving] = useState(false);
   const [loadError, setLoadError] = useState("");
   const [saveError, setSaveError] = useState("");
+  const { role, setRole } = usePinRole();
   const [isMobile, setIsMobile] = useState(false);
   const formRef = useRef<HTMLFormElement | null>(null);
-  const [pinProfile, setPinProfile] = useState<PinProfile>({
-    firstName: "",
-    lastName: "",
-    role: "user",
-  });
 
   const activeHref = "/product";
   const menuItems: MenuItem[] = [
@@ -114,9 +110,7 @@ export default function ProductPage() {
     },
   ];
   const visibleMenuItems =
-    pinProfile.role === "admin"
-      ? menuItems
-      : menuItems.filter((item) => !item.adminOnly);
+    role === "admin" ? menuItems : menuItems.filter((item) => !item.adminOnly);
 
   const showModal = async (title: string, icon: SwalIcon = "info") => {
     try {
@@ -176,24 +170,16 @@ export default function ProductPage() {
     const loadProfile = async () => {
       try {
         const res = await fetch("/api/pin", { cache: "no-store" });
-        const data = (await res.json()) as {
-          firstName?: string;
-          lastName?: string;
-          role?: string;
-          error?: string;
-        };
+        const data = (await res.json()) as { role?: string; error?: string };
         if (!res.ok || !data || "error" in data) return;
-        setPinProfile({
-          firstName: data.firstName?.trim() ?? "",
-          lastName: data.lastName?.trim() ?? "",
-          role: data.role === "admin" ? "admin" : "user",
-        });
+        const role = data.role === "admin" ? "admin" : "user";
+        setRole(role);
       } catch {
         // ignore
       }
     };
     void loadProfile();
-  }, []);
+  }, [setRole]);
 
   useEffect(() => {
     const media = window.matchMedia("(max-width: 720px)");

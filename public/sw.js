@@ -9,8 +9,13 @@ const CORE_ASSETS = [
   "/icons/icon-512.png",
   "/icons/apple-touch-icon.png",
 ];
+const HAS_CACHE = typeof caches !== "undefined";
 
 self.addEventListener("install", (event) => {
+  if (!HAS_CACHE) {
+    self.skipWaiting();
+    return;
+  }
   event.waitUntil(
     caches
       .open(CORE_CACHE)
@@ -20,6 +25,10 @@ self.addEventListener("install", (event) => {
 });
 
 self.addEventListener("activate", (event) => {
+  if (!HAS_CACHE) {
+    self.clients.claim();
+    return;
+  }
   event.waitUntil(
     caches
       .keys()
@@ -36,6 +45,10 @@ self.addEventListener("activate", (event) => {
 
 self.addEventListener("fetch", (event) => {
   if (event.request.method !== "GET") {
+    return;
+  }
+
+  if (!HAS_CACHE) {
     return;
   }
 

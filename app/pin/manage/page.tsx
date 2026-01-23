@@ -4,6 +4,7 @@ import Image from "next/image";
 import Link from "next/link";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import Icon, { type IconName } from "@/components/Icon";
+import { usePinRole } from "@/components/PinRoleProvider";
 
 type PinEntry = {
   id: string;
@@ -12,10 +13,6 @@ type PinEntry = {
   lastName: string;
   signatureImage: string;
   createdAt: string;
-};
-
-type PinProfile = {
-  role: "admin" | "user";
 };
 
 type MenuItem = {
@@ -54,7 +51,8 @@ export default function PinManagePage() {
   const [draft, setDraft] = useState<PinDraft>(initialDraft);
   const [saving, setSaving] = useState(false);
   const [deletingId, setDeletingId] = useState("");
-  const [pinProfile, setPinProfile] = useState<PinProfile>({ role: "user" });
+  const [isMobile, setIsMobile] = useState(false);
+  const { role, setRole } = usePinRole();
   const activeHref = "/pin/manage";
   const menuItems: MenuItem[] = [
     { id: "quote", href: "/", label: "ใบเสนอราคา", icon: "description" },
@@ -89,9 +87,7 @@ export default function PinManagePage() {
     },
   ];
   const visibleMenuItems =
-    pinProfile.role === "admin"
-      ? menuItems
-      : menuItems.filter((item) => !item.adminOnly);
+    role === "admin" ? menuItems : menuItems.filter((item) => !item.adminOnly);
 
   const loadPins = useCallback(async () => {
     setLoading(true);
@@ -125,12 +121,31 @@ export default function PinManagePage() {
         const res = await fetch("/api/pin", { cache: "no-store" });
         const data = (await res.json()) as { role?: string; error?: string };
         if (!res.ok || !data || "error" in data) return;
-        setPinProfile({ role: data.role === "admin" ? "admin" : "user" });
+        const role = data.role === "admin" ? "admin" : "user";
+        setRole(role);
       } catch {
         // ignore
       }
     };
     void loadProfile();
+  }, [setRole]);
+
+  useEffect(() => {
+    const media = window.matchMedia("(max-width: 720px)");
+    const update = (event?: MediaQueryListEvent) => {
+      setIsMobile(event ? event.matches : media.matches);
+    };
+    update();
+    if ("addEventListener" in media) {
+      media.addEventListener("change", update);
+      return () => media.removeEventListener("change", update);
+    }
+    const legacyMedia = media as MediaQueryList & {
+      addListener?: (listener: (event: MediaQueryListEvent) => void) => void;
+      removeListener?: (listener: (event: MediaQueryListEvent) => void) => void;
+    };
+    legacyMedia.addListener?.(update);
+    return () => legacyMedia.removeListener?.(update);
   }, []);
 
   const startEdit = (entry: PinEntry) => {
@@ -282,92 +297,42 @@ export default function PinManagePage() {
           <div style={{ color: "#b91c1c", marginTop: ".6rem" }}>{actionError}</div>
         ) : null}
 
-        <div className="table-scroll" style={{ marginTop: "0.8rem" }}>
-          <table className="table" id="pinTable">
-            <thead>
-              <tr>
-                <th>ผู้ใช้งาน</th>
-                <th>PIN</th>
-                <th>สร้างเมื่อ</th>
-                <th></th>
-              </tr>
-            </thead>
-            <tbody>
-              {emptyText ? (
-                <tr>
-                  <td
-                    colSpan={4}
-                    style={{
-                      textAlign: "center",
-                      color: "#94a3b8",
-                      padding: "1rem",
-                    }}
-                  >
-                    {emptyText}
-                  </td>
-                </tr>
-              ) : null}
-              {pins.map((entry) => {
-                const isEditing = editingId === entry.id;
-                return (
-                  <tr key={entry.id}>
-                    <td style={{ minWidth: "180px" }}>
-                      {isEditing ? (
-                        <div style={{ display: "grid", gap: ".4rem" }}>
-                          <input
-                            type="text"
-                            value={draft.firstName}
-                            onChange={(e) =>
-                              setDraft((prev) => ({ ...prev, firstName: e.target.value }))
-                            }
-                            placeholder="ชื่อ"
-                          />
-                          <input
-                            type="text"
-                            value={draft.lastName}
-                            onChange={(e) =>
-                              setDraft((prev) => ({ ...prev, lastName: e.target.value }))
-                            }
-                            placeholder="นามสกุล"
-                          />
-                          <div style={{ display: "grid", gap: ".35rem" }}>
-                            <span style={{ color: "var(--muted)", fontSize: ".85rem" }}>
-                              ลายเซ็น
-                            </span>
-                            <input
-                              id={`signature-${entry.id}`}
-                              type="file"
-                              accept="image/*"
-                              onChange={handleSignatureChange}
-                            />
-                            {draft.signatureImage ? (
-                              <Image
-                                src={draft.signatureImage}
-                                width={140}
-                                height={60}
-                                unoptimized
-                                alt="ลายเซ็น"
-                                style={{
-                                  maxWidth: "140px",
-                                  maxHeight: "60px",
-                                  objectFit: "contain",
-                                  border: "1px solid #e2e8f0",
-                                  borderRadius: "8px",
-                                  padding: "6px",
-                                  background: "#fff",
-                                }}
-                              />
-                            ) : null}
-                          </div>
-                        </div>
-                      ) : (
-                        <strong>
-                          {`${entry.firstName} ${entry.lastName}`.trim() || "-"}
-                        </strong>
-                      )}
-                    </td>
-                    <td style={{ textAlign: "center", minWidth: "120px" }}>
-                      {isEditing ? (
+        {isMobile ? (
+          <div className="pin-mobile-list">
+            {emptyText ? (
+              <div className="pin-mobile-empty">{emptyText}</div>
+            ) : null}
+            {pins.map((entry) => {
+              const isEditing = editingId === entry.id;
+              const fullName = `${entry.firstName} ${entry.lastName}`.trim() || "-";
+              return (
+                <div key={entry.id} className="pin-mobile-card">
+                  {isEditing ? (
+                    <div className="pin-mobile-card__fields">
+                      <div>
+                        <label className="pin-mobile-card__label">ชื่อ</label>
+                        <input
+                          type="text"
+                          value={draft.firstName}
+                          onChange={(e) =>
+                            setDraft((prev) => ({ ...prev, firstName: e.target.value }))
+                          }
+                          placeholder="ชื่อ"
+                        />
+                      </div>
+                      <div>
+                        <label className="pin-mobile-card__label">นามสกุล</label>
+                        <input
+                          type="text"
+                          value={draft.lastName}
+                          onChange={(e) =>
+                            setDraft((prev) => ({ ...prev, lastName: e.target.value }))
+                          }
+                          placeholder="นามสกุล"
+                        />
+                      </div>
+                      <div>
+                        <label className="pin-mobile-card__label">PIN</label>
                         <input
                           type="password"
                           inputMode="numeric"
@@ -382,61 +347,241 @@ export default function PinManagePage() {
                           placeholder="เช่น 123456"
                           maxLength={PIN_LENGTH}
                         />
-                      ) : (
-                        entry.pin || "-"
-                      )}
-                    </td>
-                    <td style={{ minWidth: "140px" }}>{formatDate(entry.createdAt)}</td>
-                    <td style={{ textAlign: "right", minWidth: "160px" }}>
-                      {isEditing ? (
-                        <div style={{ display: "flex", gap: ".4rem", justifyContent: "flex-end" }}>
-                          <button
-                            type="button"
-                            className="ghost-link"
-                            style={{ border: "none", padding: ".45rem .7rem" }}
-                            onClick={handleSave}
-                            disabled={saving}
-                          >
-                            บันทึก
-                          </button>
-                          <button
-                            type="button"
-                            className="ghost-link"
-                            style={{ border: "none", padding: ".45rem .7rem" }}
-                            onClick={cancelEdit}
-                            disabled={saving}
-                          >
-                            ยกเลิก
-                          </button>
-                        </div>
-                      ) : (
-                        <div style={{ display: "flex", gap: ".45rem", justifyContent: "flex-end" }}>
-                          <button
-                            type="button"
-                            className="ghost-link"
-                            style={{ border: "none", padding: ".45rem .7rem" }}
-                            onClick={() => startEdit(entry)}
-                          >
-                            แก้ไข
-                          </button>
-                          <button
-                            type="button"
-                            className="remove"
-                            style={{ border: "none", padding: ".45rem .7rem" }}
-                            onClick={() => void handleDelete(entry)}
-                            disabled={deletingId === entry.id}
-                          >
-                            ลบ
-                          </button>
-                        </div>
-                      )}
+                      </div>
+                      <div>
+                        <label className="pin-mobile-card__label">ลายเซ็น</label>
+                        <input
+                          id={`signature-mobile-${entry.id}`}
+                          type="file"
+                          accept="image/*"
+                          onChange={handleSignatureChange}
+                        />
+                        {draft.signatureImage ? (
+                          <Image
+                            src={draft.signatureImage}
+                            width={140}
+                            height={60}
+                            unoptimized
+                            alt="ลายเซ็น"
+                            style={{
+                              maxWidth: "140px",
+                              maxHeight: "60px",
+                              objectFit: "contain",
+                              border: "1px solid #e2e8f0",
+                              borderRadius: "8px",
+                              padding: "6px",
+                              background: "#fff",
+                              marginTop: ".4rem",
+                            }}
+                          />
+                        ) : null}
+                      </div>
+                      <div className="pin-mobile-card__actions">
+                        <button
+                          type="button"
+                          className="ghost-link pin-mobile-card__button"
+                          onClick={handleSave}
+                          disabled={saving}
+                        >
+                          บันทึก
+                        </button>
+                        <button
+                          type="button"
+                          className="ghost-link pin-mobile-card__button"
+                          onClick={cancelEdit}
+                          disabled={saving}
+                        >
+                          ยกเลิก
+                        </button>
+                      </div>
+                    </div>
+                  ) : (
+                    <>
+                      <div className="pin-mobile-card__name">{fullName}</div>
+                      <div className="pin-mobile-card__meta">
+                        PIN: {entry.pin || "-"}
+                      </div>
+                      <div className="pin-mobile-card__meta">
+                        สร้างเมื่อ: {formatDate(entry.createdAt)}
+                      </div>
+                      <div className="pin-mobile-card__actions">
+                        <button
+                          type="button"
+                          className="ghost-link pin-mobile-card__button"
+                          onClick={() => startEdit(entry)}
+                        >
+                          แก้ไข
+                        </button>
+                        <button
+                          type="button"
+                          className="remove pin-mobile-card__button"
+                          onClick={() => void handleDelete(entry)}
+                          disabled={deletingId === entry.id}
+                        >
+                          ลบ
+                        </button>
+                      </div>
+                    </>
+                  )}
+                </div>
+              );
+            })}
+          </div>
+        ) : (
+          <div className="table-scroll" style={{ marginTop: "0.8rem" }}>
+            <table className="table" id="pinTable">
+              <thead>
+                <tr>
+                  <th>ผู้ใช้งาน</th>
+                  <th>PIN</th>
+                  <th>สร้างเมื่อ</th>
+                  <th></th>
+                </tr>
+              </thead>
+              <tbody>
+                {emptyText ? (
+                  <tr>
+                    <td
+                      colSpan={4}
+                      style={{
+                        textAlign: "center",
+                        color: "#94a3b8",
+                        padding: "1rem",
+                      }}
+                    >
+                      {emptyText}
                     </td>
                   </tr>
-                );
-              })}
-            </tbody>
-          </table>
-        </div>
+                ) : null}
+                {pins.map((entry) => {
+                  const isEditing = editingId === entry.id;
+                  return (
+                    <tr key={entry.id}>
+                      <td style={{ minWidth: "180px" }}>
+                        {isEditing ? (
+                          <div style={{ display: "grid", gap: ".4rem" }}>
+                            <input
+                              type="text"
+                              value={draft.firstName}
+                              onChange={(e) =>
+                                setDraft((prev) => ({ ...prev, firstName: e.target.value }))
+                              }
+                              placeholder="ชื่อ"
+                            />
+                            <input
+                              type="text"
+                              value={draft.lastName}
+                              onChange={(e) =>
+                                setDraft((prev) => ({ ...prev, lastName: e.target.value }))
+                              }
+                              placeholder="นามสกุล"
+                            />
+                            <div style={{ display: "grid", gap: ".35rem" }}>
+                              <span style={{ color: "var(--muted)", fontSize: ".85rem" }}>
+                                ลายเซ็น
+                              </span>
+                              <input
+                                id={`signature-${entry.id}`}
+                                type="file"
+                                accept="image/*"
+                                onChange={handleSignatureChange}
+                              />
+                              {draft.signatureImage ? (
+                                <Image
+                                  src={draft.signatureImage}
+                                  width={140}
+                                  height={60}
+                                  unoptimized
+                                  alt="ลายเซ็น"
+                                  style={{
+                                    maxWidth: "140px",
+                                    maxHeight: "60px",
+                                    objectFit: "contain",
+                                    border: "1px solid #e2e8f0",
+                                    borderRadius: "8px",
+                                    padding: "6px",
+                                    background: "#fff",
+                                  }}
+                                />
+                              ) : null}
+                            </div>
+                          </div>
+                        ) : (
+                          <strong>{`${entry.firstName} ${entry.lastName}`.trim() || "-"}</strong>
+                        )}
+                      </td>
+                      <td style={{ textAlign: "center", minWidth: "120px" }}>
+                        {isEditing ? (
+                          <input
+                            type="password"
+                            inputMode="numeric"
+                            autoComplete="one-time-code"
+                            value={draft.pin}
+                            onChange={(e) =>
+                              setDraft((prev) => ({
+                                ...prev,
+                                pin: e.target.value.replace(/\D/g, "").slice(0, PIN_LENGTH),
+                              }))
+                            }
+                            placeholder="เช่น 123456"
+                            maxLength={PIN_LENGTH}
+                          />
+                        ) : (
+                          entry.pin || "-"
+                        )}
+                      </td>
+                      <td style={{ minWidth: "140px" }}>{formatDate(entry.createdAt)}</td>
+                      <td style={{ textAlign: "right", minWidth: "160px" }}>
+                        {isEditing ? (
+                          <div style={{ display: "flex", gap: ".4rem", justifyContent: "flex-end" }}>
+                            <button
+                              type="button"
+                              className="ghost-link"
+                              style={{ border: "none", padding: ".45rem .7rem" }}
+                              onClick={handleSave}
+                              disabled={saving}
+                            >
+                              บันทึก
+                            </button>
+                            <button
+                              type="button"
+                              className="ghost-link"
+                              style={{ border: "none", padding: ".45rem .7rem" }}
+                              onClick={cancelEdit}
+                              disabled={saving}
+                            >
+                              ยกเลิก
+                            </button>
+                          </div>
+                        ) : (
+                          <div style={{ display: "flex", gap: ".45rem", justifyContent: "flex-end" }}>
+                            <button
+                              type="button"
+                              className="ghost-link"
+                              style={{ border: "none", padding: ".45rem .7rem" }}
+                              onClick={() => startEdit(entry)}
+                            >
+                              แก้ไข
+                            </button>
+                            <button
+                              type="button"
+                              className="remove"
+                              style={{ border: "none", padding: ".45rem .7rem" }}
+                              onClick={() => void handleDelete(entry)}
+                              disabled={deletingId === entry.id}
+                            >
+                              ลบ
+                            </button>
+                          </div>
+                        )}
+                      </td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+          </div>
+        )}
       </div>
       <div
         className="fixed bottom-0 left-0 w-full bg-white dark:bg-surface-dark border-t border-slate-100 dark:border-border-dark flex justify-around items-center py-2 px-6 z-30 lg:hidden"

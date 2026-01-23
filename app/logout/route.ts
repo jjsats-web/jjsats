@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 
 const PIN_COOKIE = "pin_auth";
+const ROLE_COOKIE = "pin_role";
 
 function isLocalhost(hostname: string) {
   return hostname === "localhost" || hostname === "127.0.0.1" || hostname === "::1";
@@ -22,6 +23,13 @@ export async function GET(request: Request) {
   const isSecure = isSecureRequest(request);
   const res = NextResponse.redirect(redirectUrl);
   res.cookies.set(PIN_COOKIE, "", {
+    httpOnly: true,
+    sameSite: "lax",
+    path: "/",
+    secure: isSecure,
+    maxAge: 0,
+  });
+  res.cookies.set(ROLE_COOKIE, "", {
     httpOnly: true,
     sameSite: "lax",
     path: "/",
