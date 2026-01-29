@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 
+import { requirePin } from "@/lib/auth/pin";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 
 export const dynamic = "force-dynamic";
@@ -62,6 +63,9 @@ function toCustomer(row: CustomerRow): Customer {
 }
 
 export async function GET() {
+  const authError = await requirePin();
+  if (authError) return authError;
+
   try {
     const supabase = createSupabaseServerClient();
     const { data, error } = await supabase
@@ -83,6 +87,9 @@ export async function GET() {
 }
 
 export async function POST(request: Request) {
+  const authError = await requirePin();
+  if (authError) return authError;
+
   let body: unknown;
   try {
     body = await request.json();

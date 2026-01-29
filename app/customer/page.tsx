@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import BottomNav from "@/components/BottomNav";
 import Icon, { type IconName } from "@/components/Icon";
 import { usePinRole } from "@/components/PinRoleProvider";
 import type { FormEvent } from "react";
@@ -516,21 +517,37 @@ export default function CustomerPage() {
                       display: "flex",
                       flexDirection: "column",
                       alignItems: "flex-end",
-                      gap: ".25rem",
+                      gap: ".35rem",
                     }}
                   >
                     <Link
-                      className="card-action-link"
+                      className="blob-button product-action-button inline-flex items-center justify-center"
                       href={`/?customer=${encodeURIComponent(customer.id)}`}
                     >
-                      เลือก
+                      <span className="blob-button__text">เลือก</span>
+                      <span className="blob-button__inner" aria-hidden="true">
+                        <span className="blob-button__blobs">
+                          <span className="blob-button__blob" />
+                          <span className="blob-button__blob" />
+                          <span className="blob-button__blob" />
+                          <span className="blob-button__blob" />
+                        </span>
+                      </span>
                     </Link>
                     <button
                       type="button"
-                      className="card-action-link"
+                      className="blob-button product-action-button inline-flex items-center justify-center"
                       onClick={() => beginEdit(customer)}
                     >
-                      แก้ไข
+                      <span className="blob-button__text">แก้ไข</span>
+                      <span className="blob-button__inner" aria-hidden="true">
+                        <span className="blob-button__blobs">
+                          <span className="blob-button__blob" />
+                          <span className="blob-button__blob" />
+                          <span className="blob-button__blob" />
+                          <span className="blob-button__blob" />
+                        </span>
+                      </span>
                     </button>
                   </div>
                 </div>
@@ -694,19 +711,35 @@ export default function CustomerPage() {
                       </div>
                     ) : null}
                   </div>
-                  <div className="mt-3 grid grid-cols-2 gap-2">
+                  <div className="mt-3 grid grid-cols-2 gap-3">
                     <Link
                       href={`/?customer=${encodeURIComponent(customer.id)}`}
-                      className="inline-flex items-center justify-center rounded-lg bg-primary text-white py-2.5 text-sm font-semibold shadow-[0_8px_16px_rgba(116,16,16,0.2)]"
+                      className="blob-button product-action-button inline-flex w-full items-center justify-center"
                     >
-                      เลือก
+                      <span className="blob-button__text">เลือก</span>
+                      <span className="blob-button__inner" aria-hidden="true">
+                        <span className="blob-button__blobs">
+                          <span className="blob-button__blob" />
+                          <span className="blob-button__blob" />
+                          <span className="blob-button__blob" />
+                          <span className="blob-button__blob" />
+                        </span>
+                      </span>
                     </Link>
                     <button
                       type="button"
-                      className="inline-flex items-center justify-center rounded-lg border border-border-light dark:border-border-dark bg-background-light dark:bg-background-dark py-2.5 text-sm font-semibold text-text-secondary-light dark:text-text-secondary-dark"
+                      className="blob-button product-action-button inline-flex w-full items-center justify-center"
                       onClick={() => beginEdit(customer)}
                     >
-                      แก้ไข
+                      <span className="blob-button__text">แก้ไข</span>
+                      <span className="blob-button__inner" aria-hidden="true">
+                        <span className="blob-button__blobs">
+                          <span className="blob-button__blob" />
+                          <span className="blob-button__blob" />
+                          <span className="blob-button__blob" />
+                          <span className="blob-button__blob" />
+                        </span>
+                      </span>
                     </button>
                   </div>
                 </div>
@@ -714,10 +747,7 @@ export default function CustomerPage() {
             })}
           </section>
         </main>
-        <footer
-          className="fixed left-0 w-full bg-surface-light dark:bg-surface-dark border-t border-border-light dark:border-border-dark p-4 shadow-[0_-4px_20px_-4px_rgba(0,0,0,0.1)] z-20"
-          style={{ bottom: "calc(64px + env(safe-area-inset-bottom))" }}
-        >
+        <footer className="app-bottom-nav-spacer fixed left-0 w-full bg-surface-light dark:bg-surface-dark border-t border-border-light dark:border-border-dark p-4 shadow-[0_-4px_20px_-4px_rgba(0,0,0,0.1)] z-20">
           <div className="flex gap-3 max-w-lg mx-auto">
             <button
               type="button"
@@ -736,30 +766,7 @@ export default function CustomerPage() {
             </button>
           </div>
         </footer>
-        <div
-          className="fixed bottom-0 left-0 w-full bg-white dark:bg-surface-dark border-t border-slate-100 dark:border-border-dark flex justify-around items-center py-2 px-6 z-30 lg:hidden"
-          style={{ paddingBottom: "env(safe-area-inset-bottom)", height: "64px" }}
-        >
-          {visibleMenuItems.map((item) => {
-            const isActive = item.href === activeHref;
-            return (
-              <Link
-                key={item.id}
-                href={item.href}
-                prefetch={item.prefetch}
-                className={`flex flex-col items-center gap-1 ${
-                  isActive ? "text-primary" : "text-slate-400"
-                }`}
-                aria-current={isActive ? "page" : undefined}
-              >
-                <Icon name={item.icon} className="h-6 w-6" bold={isActive} />
-                <span className={`text-[10px] ${isActive ? "font-bold" : "font-medium"}`}>
-                  {item.label}
-                </span>
-              </Link>
-            );
-          })}
-        </div>
+        <BottomNav items={visibleMenuItems} activeHref={activeHref} />
       </div>
     </main>
   );

@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 
+import { requirePin } from "@/lib/auth/pin";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 
 export const dynamic = "force-dynamic";
@@ -86,6 +87,9 @@ async function readDraft(request: Request): Promise<QuoteDraft | { error: string
 }
 
 export async function GET() {
+  const authError = await requirePin();
+  if (authError) return authError;
+
   try {
     const supabase = createSupabaseServerClient();
     const { data, error } = await supabase
@@ -107,6 +111,9 @@ export async function GET() {
 }
 
 export async function POST(request: Request) {
+  const authError = await requirePin();
+  if (authError) return authError;
+
   const draft = await readDraft(request);
   if ("error" in draft) {
     return NextResponse.json({ error: draft.error }, { status: 400 });

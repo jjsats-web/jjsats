@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 
+import { requireAdmin } from "@/lib/auth/pin";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 
 export const dynamic = "force-dynamic";
@@ -66,6 +67,9 @@ function buildDraft(body: unknown): ProductDraft {
 }
 
 export async function PUT(request: Request, context: { params: Promise<{ id: string }> }) {
+  const authError = await requireAdmin();
+  if (authError) return authError;
+
   const { id } = await context.params;
 
   let body: unknown;
@@ -113,6 +117,9 @@ export async function PUT(request: Request, context: { params: Promise<{ id: str
 }
 
 export async function DELETE(_request: Request, context: { params: Promise<{ id: string }> }) {
+  const authError = await requireAdmin();
+  if (authError) return authError;
+
   const { id } = await context.params;
 
   try {

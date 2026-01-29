@@ -1,7 +1,8 @@
 "use client";
 
 import Link from "next/link";
-import Icon, { type IconName } from "@/components/Icon";
+import BottomNav from "@/components/BottomNav";
+import { type IconName } from "@/components/Icon";
 import { usePinRole } from "@/components/PinRoleProvider";
 import type { FormEvent } from "react";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
@@ -353,6 +354,19 @@ export default function ProductPage() {
     <main className="pb-24 lg:pb-0">
       <header className="topbar">
         <div className="topbar__brand">JJSATs Quotation</div>
+        <nav className="app-nav-hidden">
+          {visibleMenuItems.map((item) => (
+            <Link
+              key={item.id}
+              href={item.href}
+              prefetch={item.prefetch}
+              className={item.href === activeHref ? "active" : undefined}
+              aria-current={item.href === activeHref ? "page" : undefined}
+            >
+              {item.label}
+            </Link>
+          ))}
+        </nav>
       </header>
 
       <div className="container">
@@ -505,7 +519,7 @@ export default function ProductPage() {
                       className="ghost-link"
                       onClick={() => handleMobileChoose(product)}
                     >
-                      เลือก
+                      แก้ไข
                     </button>
                   </div>
                 </div>
@@ -562,23 +576,37 @@ export default function ProductPage() {
                   <td>{product.unit || "-"}</td>
                   <td>{product.sku || "-"}</td>
                   <td style={{ textAlign: "right" }}>
-                    <div style={{ display: "flex", gap: ".45rem", justifyContent: "flex-end" }}>
+                    <div style={{ display: "flex", gap: ".5rem", justifyContent: "flex-end" }}>
                       <button
                         type="button"
-                        className="ghost-link"
-                        style={{ border: "none", padding: ".45rem .7rem" }}
+                        className="blob-button product-action-button"
                         onClick={() => startEdit(product)}
                       >
-                        แก้ไข
+                        <span className="blob-button__text">แก้ไข</span>
+                        <span className="blob-button__inner" aria-hidden="true">
+                          <span className="blob-button__blobs">
+                            <span className="blob-button__blob" />
+                            <span className="blob-button__blob" />
+                            <span className="blob-button__blob" />
+                            <span className="blob-button__blob" />
+                          </span>
+                        </span>
                       </button>
                       <button
                         type="button"
-                        className="remove"
-                        style={{ border: "none", padding: ".45rem .7rem" }}
+                        className="blob-button product-action-button product-action-button--danger"
                         onClick={() => void onDelete(product.id)}
                         disabled={saving}
                       >
-                        ลบ
+                        <span className="blob-button__text">ลบ</span>
+                        <span className="blob-button__inner" aria-hidden="true">
+                          <span className="blob-button__blobs">
+                            <span className="blob-button__blob" />
+                            <span className="blob-button__blob" />
+                            <span className="blob-button__blob" />
+                            <span className="blob-button__blob" />
+                          </span>
+                        </span>
                       </button>
                     </div>
                   </td>
@@ -602,30 +630,7 @@ export default function ProductPage() {
           </filter>
         </defs>
       </svg>
-      <div
-        className="fixed bottom-0 left-0 w-full bg-white dark:bg-surface-dark border-t border-slate-100 dark:border-border-dark flex justify-around items-center py-2 px-6 z-30 lg:hidden"
-        style={{ paddingBottom: "env(safe-area-inset-bottom)", height: "64px" }}
-      >
-        {visibleMenuItems.map((item) => {
-          const isActive = item.href === activeHref;
-          return (
-            <Link
-              key={item.id}
-              href={item.href}
-              prefetch={item.prefetch}
-              className={`flex flex-col items-center gap-1 ${
-                isActive ? "text-primary" : "text-slate-400"
-              }`}
-              aria-current={isActive ? "page" : undefined}
-            >
-              <Icon name={item.icon} className="h-6 w-6" bold={isActive} />
-              <span className={`text-[10px] ${isActive ? "font-bold" : "font-medium"}`}>
-                {item.label}
-              </span>
-            </Link>
-          );
-        })}
-      </div>
+      <BottomNav items={visibleMenuItems} activeHref={activeHref} />
     </main>
   );
 }

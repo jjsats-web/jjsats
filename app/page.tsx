@@ -5,7 +5,8 @@ import { useSearchParams } from "next/navigation";
 import type { FormEvent } from "react";
 import { Suspense, useCallback, useEffect, useMemo, useRef, useState } from "react";
 import swal from "sweetalert";
-import Icon, { type IconName } from "@/components/Icon";
+import BottomNav from "@/components/BottomNav";
+import { type IconName } from "@/components/Icon";
 import LineItemsTable, { LineItem } from "@/components/LineItemsTable";
 import { usePinRole } from "@/components/PinRoleProvider";
 import QuoteForm, { QuoteFormData } from "@/components/QuoteForm";
@@ -1591,18 +1592,12 @@ function HomePageClient() {
             </div>
 
             <div className="actions center quote-actions">
-              <button type="submit" disabled={saving} className="blob-button">
-                <span className="blob-button__text">
-                  {saving ? "กำลังบันทึก..." : "บันทึกใบเสนอราคา"}
-                </span>
-                <span className="blob-button__inner" aria-hidden="true">
-                  <span className="blob-button__blobs">
-                    <span className="blob-button__blob" />
-                    <span className="blob-button__blob" />
-                    <span className="blob-button__blob" />
-                    <span className="blob-button__blob" />
-                  </span>
-                </span>
+              <button
+                type="submit"
+                disabled={saving}
+                className="inline-flex items-center justify-center rounded-lg bg-primary px-5 py-3 font-bold text-white shadow-[0_10px_20px_rgba(116,16,16,0.3)] transition-all transform hover:bg-primary-dark active:scale-[0.98]"
+              >
+                {saving ? "กำลังบันทึก..." : "บันทึกใบเสนอราคา"}
               </button>
             </div>
           </section>
@@ -1718,19 +1713,9 @@ function HomePageClient() {
             type="submit"
             form="quoteForm"
             disabled={saving}
-            className="blob-button quote-mobile-actions__button"
+            className="quote-mobile-actions__button inline-flex items-center justify-center rounded-lg bg-primary px-4 py-3.5 font-bold text-white shadow-[0_10px_20px_rgba(116,16,16,0.3)] transition-all transform hover:bg-primary-dark active:scale-[0.98]"
           >
-            <span className="blob-button__text">
-              {saving ? "กำลังบันทึก..." : "บันทึกใบเสนอราคา"}
-            </span>
-            <span className="blob-button__inner" aria-hidden="true">
-              <span className="blob-button__blobs">
-                <span className="blob-button__blob" />
-                <span className="blob-button__blob" />
-                <span className="blob-button__blob" />
-                <span className="blob-button__blob" />
-              </span>
-            </span>
+            {saving ? "กำลังบันทึก..." : "บันทึกใบเสนอราคา"}
           </button>
         </div>
       </div>
@@ -1748,30 +1733,7 @@ function HomePageClient() {
           </filter>
         </defs>
       </svg>
-      <div
-        className="fixed bottom-0 left-0 w-full bg-white dark:bg-surface-dark border-t border-slate-100 dark:border-border-dark flex justify-around items-center py-2 px-6 z-30 lg:hidden"
-        style={{ paddingBottom: "env(safe-area-inset-bottom)", height: "64px" }}
-      >
-        {visibleMenuItems.map((item) => {
-          const isActive = item.href === activeHref;
-          return (
-            <Link
-              key={item.id}
-              href={item.href}
-              prefetch={item.prefetch}
-              className={`flex flex-col items-center gap-1 ${
-                isActive ? "text-primary" : "text-slate-400"
-              }`}
-              aria-current={isActive ? "page" : undefined}
-            >
-              <Icon name={item.icon} className="h-6 w-6" bold={isActive} />
-              <span className={`text-[10px] ${isActive ? "font-bold" : "font-medium"}`}>
-                {item.label}
-              </span>
-            </Link>
-          );
-        })}
-      </div>
+      <BottomNav items={visibleMenuItems} activeHref={activeHref} />
     </main>
   );
 }

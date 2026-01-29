@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 
+import { requirePin } from "@/lib/auth/pin";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 
 type QuoteItemDraft = {
@@ -87,6 +88,9 @@ export async function PUT(
   request: Request,
   { params }: { params: Promise<{ id: string }> },
 ) {
+  const authError = await requirePin();
+  if (authError) return authError;
+
   const { id } = await params;
   if (!id) {
     return NextResponse.json({ error: "Missing quote id" }, { status: 400 });
@@ -132,6 +136,9 @@ export async function DELETE(
   _request: Request,
   { params }: { params: Promise<{ id: string }> },
 ) {
+  const authError = await requirePin();
+  if (authError) return authError;
+
   const { id } = await params;
   if (!id) {
     return NextResponse.json({ error: "Missing quote id" }, { status: 400 });

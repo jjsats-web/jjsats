@@ -20,6 +20,17 @@ You can start editing the page by modifying `app/page.tsx`. The page auto-update
 
 This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
 
+## Environment
+
+Copy `.env.example` to `.env.local` and fill in the Supabase keys before using the API routes.
+
+## Scripts
+
+- `npm run dev` - start the dev server
+- `npm run lint` - run ESLint
+- `npm run test` - run the test suite
+- `npm run build` - create a production build
+
 ## Learn More
 
 To learn more about Next.js, take a look at the following resources:
