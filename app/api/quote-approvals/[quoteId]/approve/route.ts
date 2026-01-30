@@ -6,7 +6,7 @@ import { createSupabaseServerClient } from "@/lib/supabase/server";
 export const dynamic = "force-dynamic";
 
 const PIN_COOKIE = "pin_auth";
-const ADMIN_PIN = "000000";
+const ADMIN_PINS = new Set(["000000", "111111", "222222"]);
 
 type PinRow = {
   first_name: string | null;
@@ -24,7 +24,7 @@ function readOptionalString(value: unknown) {
 
 async function readAdminProfile(pin: string) {
   if (!pin || pin === "ok") return { isAdmin: false, name: "" };
-  if (pin === ADMIN_PIN) return { isAdmin: true, name: "" };
+  if (ADMIN_PINS.has(pin)) return { isAdmin: true, name: "" };
 
   const supabase = createSupabaseServerClient();
   const { data } = await supabase
