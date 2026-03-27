@@ -1,4 +1,4 @@
-import { cookies } from "next/headers";
+import { cookies, headers } from "next/headers";
 import { NextResponse } from "next/server";
 
 const PIN_COOKIE = "pin_auth";
@@ -15,9 +15,14 @@ export type PinSession = {
 
 export async function getPinSession(): Promise<PinSession> {
   const cookieStore = await cookies();
-  const pin = cookieStore.get(PIN_COOKIE)?.value ?? "";
+  const headerStore = await headers();
+  const pinHeader = headerStore.get("x-pin-auth")?.trim() ?? "";
+  const roleHeader = headerStore.get("x-pin-role")?.trim() ?? "";
+  const pinCookie = cookieStore.get(PIN_COOKIE)?.value ?? "";
   const roleCookie = cookieStore.get(ROLE_COOKIE)?.value ?? "";
-  const role = roleCookie === ADMIN_ROLE ? "admin" : "user";
+  const pin = pinCookie || pinHeader;
+  const roleSource = roleCookie || roleHeader;
+  const role = roleSource === ADMIN_ROLE ? "admin" : "user";
   const isAuthenticated = Boolean(pin && pin !== "ok");
   const isAdmin = role === "admin" || pin === MASTER_PIN;
 

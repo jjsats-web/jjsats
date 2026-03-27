@@ -175,7 +175,15 @@ export async function POST(request: Request) {
     let error = response.error;
 
     if (error && isMissingContactEmailColumn(error)) {
-      const { contact_email: _contactEmail, ...legacyInsertPayload } = insertPayload;
+      const legacyInsertPayload = {
+        id: insertPayload.id,
+        company_name: insertPayload.company_name,
+        tax_id: insertPayload.tax_id,
+        contact_name: insertPayload.contact_name,
+        contact_phone: insertPayload.contact_phone,
+        address: insertPayload.address,
+        approx_purchase_date: insertPayload.approx_purchase_date,
+      };
       const legacyResponse = await supabase
         .from("customers")
         .insert(legacyInsertPayload)

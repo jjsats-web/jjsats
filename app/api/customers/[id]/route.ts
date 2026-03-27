@@ -185,7 +185,14 @@ export async function PUT(request: Request, context: { params: Promise<{ id: str
     let error = response.error;
 
     if (error && isMissingContactEmailColumn(error)) {
-      const { contact_email: _contactEmail, ...legacyUpdatePayload } = updatePayload;
+      const legacyUpdatePayload = {
+        company_name: updatePayload.company_name,
+        tax_id: updatePayload.tax_id,
+        contact_name: updatePayload.contact_name,
+        contact_phone: updatePayload.contact_phone,
+        address: updatePayload.address,
+        approx_purchase_date: updatePayload.approx_purchase_date,
+      };
       const legacyResponse = await supabase
         .from("customers")
         .update(legacyUpdatePayload)

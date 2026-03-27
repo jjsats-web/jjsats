@@ -1,11 +1,12 @@
 "use client";
 
 import { useSearchParams } from "next/navigation";
-import { Suspense, useEffect, useState } from "react";
+import { Suspense, useEffect, useRef, useState } from "react";
 
 type PinStatus = "idle" | "correct" | "wrong";
+
 const PIN_LENGTH = 6;
-const PIN_SESSION_MAX_AGE = 60 * 60;
+const PIN_SESSION_KEY = "pin_auth";
 
 export default function PinPage() {
   return (
@@ -25,15 +26,29 @@ function PinPageClient() {
     return value;
   })();
   const debugEnabled = searchParams.get("debug") === "1";
+  const errorFromQuery = searchParams.get("error") ?? "";
+
   const [debugLogs, setDebugLogs] = useState<string[]>([]);
   const [pin, setPin] = useState("");
-  const [error, setError] = useState("");
+  const [error, setError] = useState(errorFromQuery);
   const [pending, setPending] = useState(false);
   const [status, setStatus] = useState<PinStatus>("idle");
+  const formRef = useRef<HTMLFormElement | null>(null);
+
+  useEffect(() => {
+    setError(errorFromQuery);
+    setPending(false);
+    if (!errorFromQuery) return;
+    window.sessionStorage.removeItem(PIN_SESSION_KEY);
+    setStatus("wrong");
+    setPin("");
+    const timeout = window.setTimeout(() => setStatus("idle"), 800);
+    return () => window.clearTimeout(timeout);
+  }, [errorFromQuery]);
 
   useEffect(() => {
     if (pin.length === PIN_LENGTH && !pending) {
-      void submitPin(pin);
+      submitPin(pin);
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [pin]);
@@ -44,59 +59,16 @@ function PinPageClient() {
     setDebugLogs((prev) => [...prev.slice(-14), `${timestamp} ${message}`]);
   };
 
-  const writePinSessionCookies = (pinValue: string, role: "admin" | "user") => {
-    const secure = window.location.protocol === "https:" ? "; Secure" : "";
-    document.cookie = `pin_auth=${encodeURIComponent(pinValue)}; Max-Age=${PIN_SESSION_MAX_AGE}; Path=/; SameSite=Lax${secure}`;
-    document.cookie = `pin_role=${encodeURIComponent(role)}; Max-Age=${PIN_SESSION_MAX_AGE}; Path=/; SameSite=Lax${secure}`;
-  };
-
-  const submitPin = async (code: string) => {
+  const submitPin = (code: string) => {
     if (code.length !== PIN_LENGTH) return;
-    logDebug(`submit start len=${code.length}`);
+
+    logDebug(`submit start len=${code.length} via requestSubmit`);
     setPending(true);
     setError("");
-    const startedAt = performance.now();
-    try {
-      const res = await fetch("/api/pin", {
-        method: "POST",
-        credentials: "include",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ pin: code }),
-      });
-      const payload = (await res.json().catch(() => ({}))) as {
-        error?: string;
-        role?: "admin" | "user";
-      };
-      logDebug(`response ${res.status} in ${Math.round(performance.now() - startedAt)}ms`);
-      if (!res.ok) {
-        logDebug(`error ${payload.error || "invalid pin"}`);
-        setStatus("wrong");
-        setError(payload.error || "PIN ไม่ถูกต้อง");
-        setTimeout(() => {
-          setStatus("idle");
-          setPin("");
-        }, 800);
-        return;
-      }
-      writePinSessionCookies(code, payload.role === "admin" ? "admin" : "user");
-      logDebug(`cookie written role=${payload.role === "admin" ? "admin" : "user"}`);
-      setStatus("correct");
-      logDebug(`redirect ${redirectTo}`);
-      setTimeout(() => {
-        window.location.assign(redirectTo);
-      }, 400);
-    } catch {
-      logDebug("network error");
-      setStatus("wrong");
-      setError("เกิดข้อผิดพลาด กรุณาลองใหม่");
-      setTimeout(() => {
-        setStatus("idle");
-        setPin("");
-      }, 800);
-    } finally {
-      logDebug("submit done");
-      setPending(false);
-    }
+    setStatus("correct");
+    window.sessionStorage.setItem(PIN_SESSION_KEY, code);
+    logDebug(`redirect ${redirectTo}`);
+    formRef.current?.requestSubmit();
   };
 
   const handleDigit = (digit: string) => {
@@ -113,6 +85,7 @@ function PinPageClient() {
     setStatus("idle");
     setPin("");
     setError("");
+    window.sessionStorage.removeItem(PIN_SESSION_KEY);
   };
 
   const dots = Array.from({ length: PIN_LENGTH });
@@ -120,6 +93,11 @@ function PinPageClient() {
 
   return (
     <main className={`pin-page ${status !== "idle" ? `pin-${status}` : ""}`}>
+      <form ref={formRef} method="POST" action="/pin/login" style={{ display: "contents" }}>
+        <input type="hidden" name="pin" value={pin} readOnly />
+        <input type="hidden" name="redirectTo" value={redirectTo} readOnly />
+        {debugEnabled ? <input type="hidden" name="debug" value="1" readOnly /> : null}
+      </form>
       <div className="pin-card">
         <h1>กรอกรหัส PIN</h1>
         <p className="pin-hint">กรุณากรอกรหัส PIN เพื่อเข้าหน้าทะเบียนลูกค้า</p>
@@ -138,23 +116,28 @@ function PinPageClient() {
         {error ? <div className="pin-error" style={{ textAlign: "center" }}>{error}</div> : null}
 
         <div className="pin-pad">
-          {digits.map((d, idx) => (
+          {digits.map((digit, idx) => (
+            <button
+              key={`${digit}-${idx}`}
+              type="button"
+              className="number"
+              onClick={() => handleDigit(digit)}
+              disabled={pending}
+            >
+              {digit}
+            </button>
+          ))}
           <button
-            key={d + idx}
             type="button"
-            className="number"
-            onClick={() => handleDigit(d)}
+            className="number number-clear"
+            onClick={handleClear}
             disabled={pending}
           >
-            {d}
-          </button>
-          ))}
-          <button type="button" className="number number-clear" onClick={handleClear} disabled={pending}>
             ล้าง
           </button>
         </div>
-
       </div>
+
       {debugEnabled ? (
         <div
           style={{

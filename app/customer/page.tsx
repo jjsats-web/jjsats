@@ -26,6 +26,7 @@ type Customer = {
 type CustomerDraft = Omit<Customer, "id" | "createdAt">;
 
 const API = "/api/customers";
+const PIN_SESSION_KEY = "pin_auth";
 
 const initialDraft: CustomerDraft = {
   companyName: "",
@@ -51,6 +52,12 @@ function normalizeEmail(value: string) {
 
 function isValidEmail(value: string) {
   return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value);
+}
+
+function getPinAuthHeaders() {
+  if (typeof window === "undefined") return {} as Record<string, string>;
+  const pin = window.sessionStorage.getItem(PIN_SESSION_KEY)?.trim() ?? "";
+  return pin ? { "x-pin-auth": pin } : ({} as Record<string, string>);
 }
 
 const countFormatter = new Intl.NumberFormat("th-TH");
@@ -115,7 +122,11 @@ export default function CustomerPage() {
     setLoading(true);
     setLoadError("");
     try {
-      const res = await fetch(API, { cache: "no-store", credentials: "include" });
+      const res = await fetch(API, {
+        cache: "no-store",
+        credentials: "include",
+        headers: getPinAuthHeaders(),
+      });
       const data = (await res.json()) as Customer[] | { error: string };
       if (!res.ok || !Array.isArray(data)) {
         setLoadError(!Array.isArray(data) && "error" in data ? data.error : "โหลดข้อมูลลูกค้าไม่สำเร็จ");
@@ -160,7 +171,11 @@ export default function CustomerPage() {
   useEffect(() => {
     const loadProfile = async () => {
       try {
-        const res = await fetch("/api/pin", { cache: "no-store", credentials: "include" });
+        const res = await fetch("/api/pin", {
+          cache: "no-store",
+          credentials: "include",
+          headers: getPinAuthHeaders(),
+        });
         const data = (await res.json()) as {
           firstName?: string;
           lastName?: string;
@@ -218,7 +233,10 @@ export default function CustomerPage() {
       const res = await fetch(targetUrl, {
         method: editingCustomerId ? "PUT" : "POST",
         credentials: "include",
-        headers: { "Content-Type": "application/json" },
+        headers: {
+          "Content-Type": "application/json",
+          ...getPinAuthHeaders(),
+        },
         body: JSON.stringify(payload),
       });
       const data = (await res.json()) as Customer | { error: string };

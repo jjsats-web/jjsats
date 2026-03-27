@@ -14,6 +14,7 @@ function shouldBypass(req: NextRequest) {
   const { pathname } = req.nextUrl;
   if (pathname.startsWith("/_next")) return true;
   if (pathname.startsWith("/api/pin")) return true;
+  if (pathname.startsWith("/pin/login")) return true;
   if (pathname.startsWith("/icons/")) return true;
   if (pathname === "/favicon.ico") return true;
   if (pathname === "/manifest.webmanifest") return true;
