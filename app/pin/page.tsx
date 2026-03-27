@@ -5,6 +5,7 @@ import { Suspense, useEffect, useState } from "react";
 
 type PinStatus = "idle" | "correct" | "wrong";
 const PIN_LENGTH = 6;
+const PIN_SESSION_MAX_AGE = 60 * 60;
 
 export default function PinPage() {
   return (
@@ -43,6 +44,12 @@ function PinPageClient() {
     setDebugLogs((prev) => [...prev.slice(-14), `${timestamp} ${message}`]);
   };
 
+  const writePinSessionCookies = (pinValue: string, role: "admin" | "user") => {
+    const secure = window.location.protocol === "https:" ? "; Secure" : "";
+    document.cookie = `pin_auth=${encodeURIComponent(pinValue)}; Max-Age=${PIN_SESSION_MAX_AGE}; Path=/; SameSite=Lax${secure}`;
+    document.cookie = `pin_role=${encodeURIComponent(role)}; Max-Age=${PIN_SESSION_MAX_AGE}; Path=/; SameSite=Lax${secure}`;
+  };
+
   const submitPin = async (code: string) => {
     if (code.length !== PIN_LENGTH) return;
     logDebug(`submit start len=${code.length}`);
@@ -56,7 +63,10 @@ function PinPageClient() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ pin: code }),
       });
-      const payload = (await res.json().catch(() => ({}))) as { error?: string };
+      const payload = (await res.json().catch(() => ({}))) as {
+        error?: string;
+        role?: "admin" | "user";
+      };
       logDebug(`response ${res.status} in ${Math.round(performance.now() - startedAt)}ms`);
       if (!res.ok) {
         logDebug(`error ${payload.error || "invalid pin"}`);
@@ -68,6 +78,8 @@ function PinPageClient() {
         }, 800);
         return;
       }
+      writePinSessionCookies(code, payload.role === "admin" ? "admin" : "user");
+      logDebug(`cookie written role=${payload.role === "admin" ? "admin" : "user"}`);
       setStatus("correct");
       logDebug(`redirect ${redirectTo}`);
       setTimeout(() => {
