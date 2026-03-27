@@ -52,6 +52,7 @@ function PinPageClient() {
     try {
       const res = await fetch("/api/pin", {
         method: "POST",
+        credentials: "include",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ pin: code }),
       });

@@ -115,7 +115,7 @@ export default function CustomerPage() {
     setLoading(true);
     setLoadError("");
     try {
-      const res = await fetch(API, { cache: "no-store" });
+      const res = await fetch(API, { cache: "no-store", credentials: "include" });
       const data = (await res.json()) as Customer[] | { error: string };
       if (!res.ok || !Array.isArray(data)) {
         setLoadError(!Array.isArray(data) && "error" in data ? data.error : "โหลดข้อมูลลูกค้าไม่สำเร็จ");
@@ -160,7 +160,7 @@ export default function CustomerPage() {
   useEffect(() => {
     const loadProfile = async () => {
       try {
-        const res = await fetch("/api/pin", { cache: "no-store" });
+        const res = await fetch("/api/pin", { cache: "no-store", credentials: "include" });
         const data = (await res.json()) as {
           firstName?: string;
           lastName?: string;
@@ -217,6 +217,7 @@ export default function CustomerPage() {
         : API;
       const res = await fetch(targetUrl, {
         method: editingCustomerId ? "PUT" : "POST",
+        credentials: "include",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(payload),
       });
