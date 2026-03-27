@@ -65,22 +65,22 @@ export async function POST(request: Request) {
 
     const role = data?.role === "admin" ? "admin" : "user";
     const isSecure = isSecureRequest(request);
-    const cookieStore = await cookies();
-    cookieStore.set(PIN_COOKIE, pin, {
+    const response = NextResponse.json({ ok: true, role });
+    response.cookies.set(PIN_COOKIE, pin, {
       httpOnly: true,
       sameSite: "lax",
       path: "/",
       secure: isSecure,
-      maxAge: 60 * 60, // 1 hour
+      maxAge: 60 * 60,
     });
-    cookieStore.set(ROLE_COOKIE, role, {
+    response.cookies.set(ROLE_COOKIE, role, {
       httpOnly: true,
       sameSite: "lax",
       path: "/",
       secure: isSecure,
-      maxAge: 60 * 60, // 1 hour
+      maxAge: 60 * 60,
     });
-    return NextResponse.json({ ok: true });
+    return response;
   } catch (error) {
     const message = error instanceof Error ? error.message : "เกิดข้อผิดพลาด";
     return NextResponse.json({ error: message }, { status: 500 });
