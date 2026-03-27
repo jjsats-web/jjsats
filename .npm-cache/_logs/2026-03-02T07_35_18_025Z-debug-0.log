@@ -1,0 +1,12 @@
+0 verbose cli C:\Program Files\nodejs\node.exe C:\Users\USER\AppData\Roaming\npm\node_modules\npm\bin\npm-cli.js
+1 info using npm@11.7.0
+2 info using node@v24.12.0
+3 silly config load:file:C:\Users\USER\AppData\Roaming\npm\node_modules\npm\npmrc
+4 silly config load:file:C:\quotation\my-next-app\.npmrc
+5 silly config load:file:C:\Users\USER\.npmrc
+6 silly config load:file:C:\Users\USER\AppData\Roaming\npm\etc\npmrc
+7 verbose title npm exec ctx7 setup --opencode --project --yes
+8 verbose argv "exec" "--yes" "false" "--" "ctx7" "setup" "--opencode" "--project" "--yes"
+9 verbose logfile logs-max:10 dir:C:\quotation\my-next-app\.npm-cache\_logs\2026-03-02T07_35_18_025Z-
+10 verbose logfile C:\quotation\my-next-app\.npm-cache\_logs\2026-03-02T07_35_18_025Z-debug-0.log
+11 silly logfile done cleaning log files

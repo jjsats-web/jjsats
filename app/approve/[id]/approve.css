@@ -49,17 +49,31 @@
   flex: 1;
   text-align: center;
   line-height: 1.5;
+  padding: 0 4px;
 }
 
 .quote-preview__page .company-name {
   font-weight: 700;
-  font-size: 16px;
+  font-size: 10px;
   margin-bottom: 4px;
 }
 
 .quote-preview__page .company-detail {
-  font-size: 12px;
+  font-size: 10px;
+  line-height: 1.2;
   color: #334155;
+}
+
+.quote-preview__page .company-detail--line2 {
+  font-size: 10px;
+  white-space: nowrap;
+  display: inline-block;
+  max-width: 100%;
+  margin: 0 auto;
+}
+
+.quote-preview__page .tax-id-nowrap {
+  white-space: nowrap;
 }
 
 .quote-preview__page .company-detail + .company-detail {
@@ -131,25 +145,31 @@
   font-weight: 700;
   text-align: center;
   vertical-align: middle;
-  height: 36px;
+  height: 48px;
   padding: 0 8px;
   font-size: 10px;
 }
 
 .quote-preview__page .items thead th .th-cell {
   display: flex;
+  flex-direction: column;
   align-items: center;
   justify-content: center;
   height: 100%;
+  width: 100%;
   line-height: 1.1;
-  transform: translateY(-6px);
   white-space: nowrap;
   text-align: center;
 }
 
-.quote-preview__page .items th.code {
+.quote-preview__page .items th.unit {
   text-align: center;
   width: 70px;
+}
+
+.quote-preview__page .items th.seq {
+  text-align: center;
+  width: 52px;
 }
 
 .quote-preview__page .items th.num,
@@ -167,10 +187,15 @@
   background: #fef2f2;
 }
 
-.quote-preview__page .items td.code {
+.quote-preview__page .items td.unit {
   text-align: center;
   white-space: nowrap;
   font-size: 9px;
+}
+
+.quote-preview__page .items td.seq {
+  text-align: center;
+  white-space: nowrap;
 }
 
 .quote-preview__page .summary {

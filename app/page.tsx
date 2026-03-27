@@ -5,6 +5,7 @@ import { useSearchParams } from "next/navigation";
 import type { FormEvent } from "react";
 import { Suspense, useCallback, useEffect, useMemo, useRef, useState } from "react";
 import swal from "sweetalert";
+import jjsatsLogo from "@/public/jjsats-logo.png";
 import BottomNav from "@/components/BottomNav";
 import { type IconName } from "@/components/Icon";
 import LineItemsTable, { LineItem } from "@/components/LineItemsTable";
@@ -43,6 +44,7 @@ type CustomerInfo = {
   taxId: string;
   contactName: string;
   contactPhone: string;
+  contactEmail: string;
   address: string;
   approxPurchaseDate: string;
 };
@@ -689,6 +691,7 @@ function HomePageClient() {
             taxId: readString(data.taxId),
             contactName: readString(data.contactName),
             contactPhone: readString(data.contactPhone),
+            contactEmail: readString(data.contactEmail),
             address: readString(data.address),
             approxPurchaseDate: readString(data.approxPurchaseDate),
           };
@@ -698,7 +701,9 @@ function HomePageClient() {
       }
     }
 
-    const logoUrl = await loadImageDataUrl(`${window.location.origin}/jjsats-logo.png`);
+    const logoAssetPath = typeof jjsatsLogo === "string" ? jjsatsLogo : jjsatsLogo.src;
+    const logoAssetUrl = new URL(logoAssetPath, window.location.origin).toString();
+    const logoUrl = await loadImageDataUrl(logoAssetUrl);
     const quoteNumber = formatQuoteNumber(quote.id);
     const quoteRef = quote.id.toUpperCase().startsWith("QT") ? quote.id : quoteNumber;
     const quoteDate = (() => {
@@ -715,6 +720,8 @@ function HomePageClient() {
       .filter(Boolean)
       .join(" ");
     const customerTaxId = customerInfo?.taxId ? customerInfo.taxId : "-";
+    const customerTel = customerInfo?.contactPhone ? customerInfo.contactPhone : "-";
+    const customerEmail = customerInfo?.contactEmail ? customerInfo.contactEmail : "-";
     const subjectLine = quote.systemName
       ? `ใบเสนอราคา ${quote.systemName}`
       : "";
@@ -757,13 +764,15 @@ function HomePageClient() {
     };
 
     const itemsRows = quote.items
-      .map((item) => {
+      .map((item, index) => {
         const lineTotal = Math.max(item.qty * item.price, 0);
         const { sku, description } = splitItemDescription(item.description);
+        const descriptionWithSku = sku !== "-" ? `${sku} - ${description}` : description;
         return `
           <tr>
-            <td class="code">${escapeHtml(sku)}</td>
-            <td>${escapeHtml(description)}</td>
+            <td class="seq">${index + 1}</td>
+            <td>${escapeHtml(descriptionWithSku)}</td>
+            <td class="unit">-</td>
             <td class="num">${item.qty}</td>
             <td class="num">${formatCurrencyPlain(item.price)}</td>
             <td class="num">${formatCurrencyPlain(lineTotal)}</td>
@@ -777,11 +786,12 @@ function HomePageClient() {
         <table class="items">
           <thead>
             <tr>
-              <th class="code"><div class="th-cell">รหัสสินค้า</div></th>
-              <th><div class="th-cell">รายละเอียด</div></th>
-              <th class="num"><div class="th-cell">จำนวน/Unit</div></th>
-              <th class="num"><div class="th-cell">ราคา/Price</div></th>
-              <th class="num"><div class="th-cell">รวม</div></th>
+              <th class="seq"><div class="th-cell">ลำดับ<br>No.</div></th>
+              <th><div class="th-cell">รายละเอียด<br>Description</div></th>
+              <th class="unit"><div class="th-cell">จำนวน<br>Unit</div></th>
+              <th class="num"><div class="th-cell">หน่วย<br>QTY</div></th>
+              <th class="num"><div class="th-cell">ราคา/หน่วย<br>Untill price</div></th>
+              <th class="num"><div class="th-cell">ราคารวม<br>Amount</div></th>
             </tr>
           </thead>
           <tbody>
@@ -800,7 +810,7 @@ function HomePageClient() {
           <style>
             @page { size: A4; margin: 0; }
             * { box-sizing: border-box; }
-            body { font-family: "Kanit", "Noto Sans Thai", "Segoe UI", sans-serif; color: #0b1224; margin: 0; }
+            body { font-family: "TH Sarabun New", "Sarabun", "Noto Sans Thai", "Segoe UI", sans-serif; color: #0b1224; margin: 0; }
             .doc {
               width: 210mm;
               margin: 0 auto;
@@ -834,22 +844,34 @@ function HomePageClient() {
               flex: 1;
               text-align: center;
               line-height: 1.5;
+              padding: 0 4px;
             }
             .company-name {
               font-weight: 700;
-              font-size: 16px;
+              font-size: 15px;
               margin-bottom: 4px;
             }
             .company-detail {
-              font-size: 12px;
+              font-size: 15px;
+              line-height: 1.2;
               color: #334155;
+            }
+            .company-detail--line2 {
+              font-size: 15px;
+              white-space: nowrap;
+              display: inline-block;
+              max-width: 100%;
+              margin: 0 auto;
+            }
+            .tax-id-nowrap {
+              white-space: nowrap;
             }
             .company-detail + .company-detail {
               margin-top: 2px;
             }
             .doc-title {
               text-align: center;
-              font-size: 18px;
+              font-size: 23px;
               font-weight: 700;
               letter-spacing: 0.08em;
               margin-top: -18px;
@@ -858,7 +880,7 @@ function HomePageClient() {
               display: grid;
               grid-template-columns: 1.8fr 1fr;
               border: 1px solid #111827;
-              font-size: 10px;
+              font-size: 15px;
               margin-top: -6px;
             }
             .quote-box__col {
@@ -884,7 +906,7 @@ function HomePageClient() {
             .intro {
               margin-top: -4px;
               margin-bottom: -4px;
-              font-size: 10px;
+              font-size: 15px;
               line-height: 1.4;
             }
             .intro + .items,
@@ -904,7 +926,7 @@ function HomePageClient() {
             .items td {
               padding: 10px 8px;
               border-bottom: 1px solid #e2e8f0;
-              font-size: 11px;
+              font-size: 16px;
             }
             .items th {
               background: #741010;
@@ -915,7 +937,7 @@ function HomePageClient() {
               height: 36px;
               padding: 0 8px;
               overflow: visible;
-              font-size: 10px;
+              font-size: 15px;
             }
             .items thead th {
               text-align: center;
@@ -934,21 +956,29 @@ function HomePageClient() {
             .items th.num {
               text-align: center;
             }
-            .items th.code {
+            .items th.unit {
               text-align: center;
               width: 70px;
             }
+            .items th.seq {
+              text-align: center;
+              width: 52px;
+            }
             .items td {
               text-align: left;
-              font-size: 10px;
+              font-size: 15px;
             }
             .items tbody tr:nth-child(even) td {
               background: #fef2f2;
             }
-            .items td.code {
+            .items td.unit {
               text-align: center;
               white-space: nowrap;
-              font-size: 9px;
+              font-size: 14px;
+            }
+            .items td.seq {
+              text-align: center;
+              white-space: nowrap;
             }
             .items td.num {
               text-align: center;
@@ -969,7 +999,7 @@ function HomePageClient() {
             }
             .summary td {
               padding: 4px 0;
-              font-size: 11px;
+              font-size: 16px;
             }
             .summary td.label {
               color: #64748b;
@@ -996,7 +1026,7 @@ function HomePageClient() {
             }
             .note {
               margin-top: 10px;
-              font-size: 10px;
+              font-size: 15px;
             }
             .note-title {
               font-weight: 700;
@@ -1017,7 +1047,7 @@ function HomePageClient() {
             .signature {
               flex: 1;
               text-align: center;
-              font-size: 10px;
+              font-size: 15px;
               color: #64748b;
             }
             .signature--approval {
@@ -1044,7 +1074,7 @@ function HomePageClient() {
             }
             .signature-approval-caption {
               color: #64748b;
-              font-size: 9px;
+              font-size: 14px;
               line-height: 1.4;
               margin: 0 auto;
               max-width: 220px;
@@ -1067,7 +1097,7 @@ function HomePageClient() {
               font-weight: 600;
               color: #1f2937;
             }
-            .empty { color: #94a3b8; margin-top: 8px; font-size: 11px; }
+            .empty { color: #94a3b8; margin-top: 8px; font-size: 16px; }
           </style>
         </head>
         <body>
@@ -1078,26 +1108,21 @@ function HomePageClient() {
               </div>
               <div class="company">
                 <div class="company-name">บริษัท เจเจแซท เทคโนโลยี จำกัด</div>
-                <div class="company-detail">
-                  54/52 ม.8 ถ.พุทธมณฑลสาย 5 ต.บางกระทึก อ.สามพราน จ.นครปฐม 73210 
-                </div>
-                <div class="company-detail">
-                  โทร: 061-992-6993, 096-823-4431 อีเมล: sales@jjsats.co.th, rungruengh@jjsats.co.th
-                  เลขประจำตัวผู้เสียภาษี 0105554023435
-                </div>
+                <div class="company-detail">54/52 ม.8 ถ.พุทธมณฑลสาย 5 ต.บางกระทึก อ.สามพราน จ.นครปฐม 73210</div>
+                <div class="company-detail company-detail--line2">โทร: 061-992-6993,096-823-4431 อีเมล: sales@jjsats.co.th,rungruengh@jjsats.co.th <span class="tax-id-nowrap">เลขประจำตัวผู้เสียภาษี 0105554023435</span></div>
               </div>
             </header>
 
-            <div class="doc-title">QUOTATION</div>
+            <div class="doc-title">ใบเสนอราคา/Quatation</div>
 
             <section class="quote-box">
               <div class="quote-box__col">
                 <div class="quote-row">
-                  <div class="quote-label">ลูกค้า/Customer:</div>
+                  <div class="quote-label">บริษัท/Company:</div>
                   <div class="quote-value">${escapeHtml(customerName)}</div>
                 </div>
                 <div class="quote-row">
-                  <div class="quote-label">เรียน/ATTN:</div>
+                  <div class="quote-label">ลูกค้า/Customer:</div>
                   <div class="quote-value">${escapeHtml(attentionLine || "-")}</div>
                 </div>
                 <div class="quote-row">
@@ -1112,10 +1137,18 @@ function HomePageClient() {
                   <div class="quote-label">เลขประจำตัวผู้เสียภาษี (TaxID):</div>
                   <div class="quote-value">${escapeHtml(customerTaxId)}</div>
                 </div>
+                <div class="quote-row">
+                  <div class="quote-label">โทรศัพท์/Tel:</div>
+                  <div class="quote-value">${escapeHtml(customerTel)}</div>
+                </div>
+                <div class="quote-row">
+                  <div class="quote-label">E-mail:</div>
+                  <div class="quote-value">${escapeHtml(customerEmail)}</div>
+                </div>
               </div>
               <div class="quote-box__col">
                 <div class="quote-row">
-                  <div class="quote-label">ใบเสนอราคาเลขที่/No.</div>
+                  <div class="quote-label">เลขที่/QT No.</div>
                   <div class="quote-value">${escapeHtml(quoteRef)}</div>
                 </div>
                 <div class="quote-row">
@@ -1133,6 +1166,10 @@ function HomePageClient() {
                 <div class="quote-row">
                   <div class="quote-label">อีเมล/E-mail:</div>
                   <div class="quote-value">${escapeHtml(salesEmail)}</div>
+                </div>
+                <div class="quote-row">
+                  <div class="quote-label">ยืนยันราคา/Valid Untill:</div>
+                  <div class="quote-value">15 วัน</div>
                 </div>
               </div>
             </section>
@@ -1324,13 +1361,13 @@ function HomePageClient() {
         <div className="topbar__brand">JJSATs Quotation</div>
         <nav className="app-nav-hidden">
           {visibleMenuItems.map((item) => (
-            <Link
-              key={item.id}
-              href={item.href}
-              prefetch={item.prefetch}
-              className={item.href === activeHref ? "active" : undefined}
-              aria-current={item.href === activeHref ? "page" : undefined}
-            >
+              <Link
+                key={item.id}
+                href={item.href}
+                prefetch={item.prefetch ?? false}
+                className={item.href === activeHref ? "active" : undefined}
+                aria-current={item.href === activeHref ? "page" : undefined}
+              >
               {item.label}
             </Link>
           ))}

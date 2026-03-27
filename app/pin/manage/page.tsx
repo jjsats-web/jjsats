@@ -283,7 +283,7 @@ export default function PinManagePage() {
       </header>
 
       <div className="container">
-        <Link href="/" className="ghost-link pin-back">
+        <Link href="/" prefetch={false} className="ghost-link pin-back">
           ← กลับหน้าใบเสนอราคา
         </Link>
         <h1>จัดการ PIN</h1>
@@ -291,7 +291,7 @@ export default function PinManagePage() {
           ดู แก้ไข หรือลบ PIN ของผู้ใช้งานในระบบ
         </p>
         <div className="actions" style={{ justifyContent: "flex-start", marginTop: "0.8rem" }}>
-          <Link href="/pin/register" className="ghost-link">
+          <Link href="/pin/register" prefetch={false} className="ghost-link">
             + เพิ่ม PIN
           </Link>
         </div>

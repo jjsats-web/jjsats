@@ -14,9 +14,15 @@ const eslintConfig = defineConfig([
   globalIgnores([
     // Default ignores of eslint-config-next:
     ".next/**",
+    "**/.next/**",
     "out/**",
     "build/**",
     "next-env.d.ts",
+    // Workspace folders that are not part of this app:
+    "my-video/**",
+    "my-video1/**",
+    ".agents/**",
+    ".npm-cache/**",
   ]),
 ]);
 

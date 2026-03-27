@@ -37,6 +37,7 @@ type CustomerRow = {
   tax_id: string | null;
   contact_name: string | null;
   contact_phone: string | null;
+  contact_email: string | null;
   address: string | null;
 };
 
@@ -180,7 +181,7 @@ export default async function ApprovePage({
   if (quoteRow.customer_id) {
     const { data: customer } = await supabase
       .from("customers")
-      .select("company_name,tax_id,contact_name,contact_phone,address")
+      .select("company_name,tax_id,contact_name,contact_phone,contact_email,address")
       .eq("id", quoteRow.customer_id)
       .limit(1)
       .maybeSingle();
@@ -223,6 +224,8 @@ export default async function ApprovePage({
     .filter(Boolean)
     .join(" ");
   const customerTaxId = readString(customerRow?.tax_id) || "-";
+  const customerTel = readString(customerRow?.contact_phone) || "-";
+  const customerEmail = readString(customerRow?.contact_email) || "-";
   const subjectLine = quoteRow.system_name ? `ใบเสนอราคา ${quoteRow.system_name}` : "-";
   const issuerName = readOptionalString(approvalRow?.requested_by) ?? "-";
   const issuerCaption = issuerName && issuerName !== "-" ? `(${issuerName})` : "( )";
@@ -294,11 +297,11 @@ export default async function ApprovePage({
               <div className="company">
                 <div className="company-name">บริษัท เจเจแซท เทคโนโลยี จำกัด</div>
                 <div className="company-detail">
-                  54/52 หมู่ที่ 8 ต.เทพารักษ์ อ.เมืองสมุทรสาคร จ.สมุทรสาคร 73210
+                  54/52 ม.8 ถ.พุทธมณฑลสาย 5 ต.บางกระทึก อ.สามพราน จ.นครปฐม 73210
                 </div>
-                <div className="company-detail">
-                  โทร: 061-992-6993, 096-823-4431 อีเมล: sales@jjsats.co.th,
-                  rungruengh@jjsats.co.th หมายเลขประจำตัวผู้เสียภาษี 0105554023435
+                <div className="company-detail company-detail--line2">
+                  โทร: 061-992-6993,096-823-4431 อีเมล: sales@jjsats.co.th,rungruengh@jjsats.co.th{" "}
+                  <span className="tax-id-nowrap">เลขประจำตัวผู้เสียภาษี 0105554023435</span>
                 </div>
               </div>
             </header>
@@ -308,11 +311,11 @@ export default async function ApprovePage({
             <section className="quote-box">
               <div className="quote-box__col">
                 <div className="quote-row">
-                  <div className="quote-label">ลูกค้า/Customer:</div>
+                  <div className="quote-label">บริษัท/Company:</div>
                   <div className="quote-value">{customerName}</div>
                 </div>
                 <div className="quote-row">
-                  <div className="quote-label">เรียน/ATTN:</div>
+                  <div className="quote-label">ลูกค้า/Customer:</div>
                   <div className="quote-value">{attentionLine || "-"}</div>
                 </div>
                 <div className="quote-row">
@@ -327,10 +330,18 @@ export default async function ApprovePage({
                   <div className="quote-label">เลขประจำตัวผู้เสียภาษี (TaxID):</div>
                   <div className="quote-value">{customerTaxId}</div>
                 </div>
+                <div className="quote-row">
+                  <div className="quote-label">โทรศัพท์/Tel:</div>
+                  <div className="quote-value">{customerTel}</div>
+                </div>
+                <div className="quote-row">
+                  <div className="quote-label">E-mail:</div>
+                  <div className="quote-value">{customerEmail}</div>
+                </div>
               </div>
               <div className="quote-box__col">
                 <div className="quote-row">
-                  <div className="quote-label">ใบเสนอราคาเลขที่/No.</div>
+                  <div className="quote-label">เลขที่/QT No.</div>
                   <div className="quote-value">{quoteRef}</div>
                 </div>
                 <div className="quote-row">
@@ -349,6 +360,10 @@ export default async function ApprovePage({
                   <div className="quote-label">อีเมล/E-mail:</div>
                   <div className="quote-value">sales@jjsat.co.th</div>
                 </div>
+                <div className="quote-row">
+                  <div className="quote-label">ยืนยันราคา/Valid Untill:</div>
+                  <div className="quote-value">15 วัน</div>
+                </div>
               </div>
             </section>
 
@@ -360,30 +375,35 @@ export default async function ApprovePage({
               <table className="items">
                 <thead>
                   <tr>
-                    <th className="code">
-                      <div className="th-cell">รหัสสินค้า</div>
+                    <th className="seq">
+                      <div className="th-cell">ลำดับ<br />No.</div>
                     </th>
                     <th>
-                      <div className="th-cell">รายละเอียด</div>
+                      <div className="th-cell">รายละเอียด<br />Description</div>
+                    </th>
+                    <th className="unit">
+                      <div className="th-cell">จำนวน<br />Unit</div>
                     </th>
                     <th className="num">
-                      <div className="th-cell">จำนวน/Unit</div>
+                      <div className="th-cell">หน่วย<br />QTY</div>
                     </th>
                     <th className="num">
-                      <div className="th-cell">ราคา/Price</div>
+                      <div className="th-cell">ราคา/หน่วย<br />Untill price</div>
                     </th>
                     <th className="num">
-                      <div className="th-cell">รวม</div>
+                      <div className="th-cell">ราคารวม<br />Amount</div>
                     </th>
                   </tr>
                 </thead>
                 <tbody>
                   {items.map((item, index) => {
                     const { sku, description } = splitItemDescription(item.description);
+                    const descriptionWithSku = sku !== "-" ? `${sku} - ${description}` : description;
                     return (
                       <tr key={`${quoteId}-${index}`}>
-                        <td className="code">{sku}</td>
-                        <td>{description}</td>
+                        <td className="seq">{index + 1}</td>
+                        <td>{descriptionWithSku}</td>
+                        <td className="unit">-</td>
                         <td className="num">{item.qty}</td>
                         <td className="num">{formatCurrencyPlain(item.price)}</td>
                         <td className="num">{formatCurrencyPlain(item.qty * item.price)}</td>

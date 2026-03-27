@@ -11,6 +11,7 @@ type Customer = {
   taxId: string;
   contactName: string;
   contactPhone: string;
+  contactEmail: string;
   address: string;
   approxPurchaseDate: string;
   createdAt: string;
@@ -24,6 +25,7 @@ type CustomerRow = {
   tax_id: string | null;
   contact_name: string | null;
   contact_phone: string | null;
+  contact_email: string | null;
   address: string | null;
   approx_purchase_date: string | null;
   created_at?: string | null;
@@ -37,6 +39,14 @@ function normalizeTaxId(value: string) {
   return value.replace(/\D/g, "");
 }
 
+function normalizeEmail(value: string) {
+  return value.trim().toLowerCase();
+}
+
+function isValidEmail(value: string) {
+  return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value);
+}
+
 function buildDraft(body: unknown): CustomerDraft {
   const raw = (body ?? {}) as Record<string, unknown>;
   return {
@@ -44,6 +54,7 @@ function buildDraft(body: unknown): CustomerDraft {
     taxId: normalizeTaxId(readString(raw.taxId)),
     contactName: readString(raw.contactName),
     contactPhone: readString(raw.contactPhone),
+    contactEmail: normalizeEmail(readString(raw.contactEmail)),
     address: readString(raw.address),
     approxPurchaseDate: readString(raw.approxPurchaseDate),
   };
@@ -56,6 +67,7 @@ function toCustomer(row: CustomerRow): Customer {
     taxId: row.tax_id ?? "",
     contactName: row.contact_name ?? "",
     contactPhone: row.contact_phone ?? "",
+    contactEmail: row.contact_email ?? "",
     address: row.address ?? "",
     approxPurchaseDate: row.approx_purchase_date ?? "",
     createdAt: row.created_at ?? "",
@@ -71,7 +83,7 @@ export async function GET() {
     const { data, error } = await supabase
       .from("customers")
       .select(
-        "id,company_name,tax_id,contact_name,contact_phone,address,approx_purchase_date,created_at",
+        "id,company_name,tax_id,contact_name,contact_phone,contact_email,address,approx_purchase_date,created_at",
       )
       .order("created_at", { ascending: false });
 
@@ -109,6 +121,10 @@ export async function POST(request: Request) {
     );
   }
 
+  if (draft.contactEmail && !isValidEmail(draft.contactEmail)) {
+    return NextResponse.json({ error: "Invalid E-mail format" }, { status: 400 });
+  }
+
   try {
     const supabase = createSupabaseServerClient();
     const { data, error } = await supabase
@@ -119,11 +135,12 @@ export async function POST(request: Request) {
         tax_id: draft.taxId,
         contact_name: draft.contactName,
         contact_phone: draft.contactPhone,
+        contact_email: draft.contactEmail,
         address: draft.address,
         approx_purchase_date: draft.approxPurchaseDate,
       })
       .select(
-        "id,company_name,tax_id,contact_name,contact_phone,address,approx_purchase_date,created_at",
+        "id,company_name,tax_id,contact_name,contact_phone,contact_email,address,approx_purchase_date,created_at",
       )
       .single();
 

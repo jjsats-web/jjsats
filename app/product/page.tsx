@@ -359,7 +359,7 @@ export default function ProductPage() {
             <Link
               key={item.id}
               href={item.href}
-              prefetch={item.prefetch}
+              prefetch={item.prefetch ?? false}
               className={item.href === activeHref ? "active" : undefined}
               aria-current={item.href === activeHref ? "page" : undefined}
             >

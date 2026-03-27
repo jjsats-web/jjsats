@@ -20,6 +20,7 @@ export type Database = {
           approx_purchase_date: string | null
           company_name: string | null
           contact_name: string | null
+          contact_email: string | null
           contact_phone: string | null
           created_at: string
           id: string
@@ -32,6 +33,7 @@ export type Database = {
           approx_purchase_date?: string | null
           company_name?: string | null
           contact_name?: string | null
+          contact_email?: string | null
           contact_phone?: string | null
           created_at?: string
           id?: string
@@ -44,6 +46,7 @@ export type Database = {
           approx_purchase_date?: string | null
           company_name?: string | null
           contact_name?: string | null
+          contact_email?: string | null
           contact_phone?: string | null
           created_at?: string
           id?: string

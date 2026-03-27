@@ -182,7 +182,7 @@ export default function PinRegisterPage() {
   return (
     <main className="pin-page pb-24 lg:pb-0">
       <div className="pin-card">
-        <Link href="/" className="ghost-link pin-back">
+        <Link href="/" prefetch={false} className="ghost-link pin-back">
           ← กลับหน้าใบเสนอราคา
         </Link>
         <h1>ตั้งค่า PIN</h1>

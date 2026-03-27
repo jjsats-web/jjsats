@@ -17,6 +17,7 @@ type Customer = {
   taxId: string;
   contactName: string;
   contactPhone: string;
+  contactEmail: string;
   address: string;
   approxPurchaseDate: string;
   createdAt: string;
@@ -31,6 +32,7 @@ const initialDraft: CustomerDraft = {
   taxId: "",
   contactName: "",
   contactPhone: "",
+  contactEmail: "",
   address: "",
   approxPurchaseDate: "",
 };
@@ -41,6 +43,14 @@ function normalizeInput(value: string) {
 
 function normalizeTaxId(value: string) {
   return value.replace(/\D/g, "").slice(0, 13);
+}
+
+function normalizeEmail(value: string) {
+  return value.trim().toLowerCase();
+}
+
+function isValidEmail(value: string) {
+  return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value);
 }
 
 const countFormatter = new Intl.NumberFormat("th-TH");
@@ -123,6 +133,7 @@ export default function CustomerPage() {
       taxId: customer.taxId,
       contactName: customer.contactName,
       contactPhone: customer.contactPhone,
+      contactEmail: customer.contactEmail,
       address: customer.address,
       approxPurchaseDate: customer.approxPurchaseDate,
     });
@@ -175,6 +186,7 @@ export default function CustomerPage() {
       taxId: normalizeTaxId(draft.taxId),
       contactName: normalizeInput(draft.contactName),
       contactPhone: normalizeInput(draft.contactPhone),
+      contactEmail: normalizeEmail(draft.contactEmail),
       address: normalizeInput(draft.address),
       approxPurchaseDate: normalizeInput(draft.approxPurchaseDate),
     };
@@ -186,6 +198,11 @@ export default function CustomerPage() {
 
     if (payload.taxId && payload.taxId.length !== 13) {
       await showModal("เลขประจำตัวผู้เสียภาษีต้องเป็นตัวเลข 13 หลัก", "warning");
+      return;
+    }
+
+    if (payload.contactEmail && !isValidEmail(payload.contactEmail)) {
+      await showModal("Invalid E-mail format", "warning");
       return;
     }
 
@@ -434,6 +451,19 @@ export default function CustomerPage() {
             </div>
           </div>
 
+          <div>
+            <label htmlFor="contactEmail">E-mail</label>
+            <input
+              id="contactEmail"
+              type="email"
+              value={draft.contactEmail}
+              onChange={(e) =>
+                setDraft((prev) => ({ ...prev, contactEmail: e.target.value }))
+              }
+              placeholder="example@company.com"
+            />
+          </div>
+
           <div className="grid" style={{ gridTemplateColumns: "1fr 1fr" }}>
             <div>
               <label htmlFor="approxPurchaseDate">ประมาณวันที่ซื้อ</label>
@@ -499,6 +529,7 @@ export default function CustomerPage() {
                   <div style={{ opacity: 0.7 }}>
                     {customer.contactName}{" "}
                     {customer.contactPhone ? `· ${customer.contactPhone}` : ""}
+                    {customer.contactEmail ? `· ${customer.contactEmail}` : ""}
                   </div>
                   <div style={{ opacity: 0.7 }}>{customer.address}</div>
                   {customer.taxId ? (
@@ -665,6 +696,20 @@ export default function CustomerPage() {
                 </div>
                 <div>
                   <label className="block text-sm font-medium text-text-secondary-light dark:text-text-secondary-dark mb-1.5">
+                    E-mail
+                  </label>
+                  <input
+                    className="w-full rounded-lg bg-background-light dark:bg-background-dark border border-gray-200 dark:border-border-dark focus:border-primary focus:ring-1 focus:ring-primary text-base py-3 px-4 placeholder-gray-400"
+                    type="email"
+                    placeholder="example@company.com"
+                    value={draft.contactEmail}
+                    onChange={(e) =>
+                      setDraft((prev) => ({ ...prev, contactEmail: e.target.value }))
+                    }
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-text-secondary-light dark:text-text-secondary-dark mb-1.5">
                     ที่อยู่
                   </label>
                   <input
@@ -693,7 +738,7 @@ export default function CustomerPage() {
             ) : null}
             {customers.map((customer) => {
               const display = customer.companyName.trim() || "(ไม่ระบุชื่อ)";
-              const secondary = [customer.contactName, customer.contactPhone]
+              const secondary = [customer.contactName, customer.contactPhone, customer.contactEmail]
                 .filter(Boolean)
                 .join(" · ");
               return (

@@ -1,0 +1,10 @@
+{
+  "dependencies": {
+    "ctx7": "^0.3.1"
+  },
+  "_npx": {
+    "packages": [
+      "ctx7"
+    ]
+  }
+}

@@ -29,7 +29,7 @@ export default function BottomNav({ items, activeHref }: BottomNavProps) {
           <Link
             key={item.id}
             href={item.href}
-            prefetch={item.prefetch}
+            prefetch={item.prefetch ?? false}
             className={`flex flex-col items-center gap-1 ${
               isActive ? "text-primary" : "text-slate-400"
             }`}
