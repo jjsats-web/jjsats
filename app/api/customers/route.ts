@@ -25,11 +25,22 @@ type CustomerRow = {
   tax_id: string | null;
   contact_name: string | null;
   contact_phone: string | null;
-  contact_email: string | null;
+  contact_email?: string | null;
   address: string | null;
   approx_purchase_date: string | null;
   created_at?: string | null;
 };
+
+type SupabaseErrorLike = {
+  message?: string | null;
+  details?: string | null;
+  hint?: string | null;
+};
+
+const CUSTOMER_SELECT =
+  "id,company_name,tax_id,contact_name,contact_phone,contact_email,address,approx_purchase_date,created_at";
+const CUSTOMER_SELECT_LEGACY =
+  "id,company_name,tax_id,contact_name,contact_phone,address,approx_purchase_date,created_at";
 
 function readString(value: unknown) {
   return typeof value === "string" ? value.trim() : "";
@@ -74,18 +85,36 @@ function toCustomer(row: CustomerRow): Customer {
   };
 }
 
+function isMissingContactEmailColumn(error: SupabaseErrorLike | null | undefined) {
+  const message = [error?.message, error?.details, error?.hint].filter(Boolean).join(" ").toLowerCase();
+  return message.includes("contact_email") && (
+    message.includes("does not exist") ||
+    message.includes("schema cache") ||
+    message.includes("column")
+  );
+}
+
 export async function GET() {
   const authError = await requirePin();
   if (authError) return authError;
 
   try {
     const supabase = createSupabaseServerClient();
-    const { data, error } = await supabase
+    const response = await supabase
       .from("customers")
-      .select(
-        "id,company_name,tax_id,contact_name,contact_phone,contact_email,address,approx_purchase_date,created_at",
-      )
+      .select(CUSTOMER_SELECT)
       .order("created_at", { ascending: false });
+    let data = response.data as CustomerRow[] | null;
+    let error = response.error;
+
+    if (error && isMissingContactEmailColumn(error)) {
+      const legacyResponse = await supabase
+        .from("customers")
+        .select(CUSTOMER_SELECT_LEGACY)
+        .order("created_at", { ascending: false });
+      data = (legacyResponse.data ?? null) as CustomerRow[] | null;
+      error = legacyResponse.error;
+    }
 
     if (error) {
       return NextResponse.json({ error: error.message }, { status: 500 });
@@ -127,22 +156,34 @@ export async function POST(request: Request) {
 
   try {
     const supabase = createSupabaseServerClient();
-    const { data, error } = await supabase
+    const insertPayload = {
+      id: crypto.randomUUID(),
+      company_name: draft.companyName,
+      tax_id: draft.taxId,
+      contact_name: draft.contactName,
+      contact_phone: draft.contactPhone,
+      contact_email: draft.contactEmail,
+      address: draft.address,
+      approx_purchase_date: draft.approxPurchaseDate,
+    };
+    const response = await supabase
       .from("customers")
-      .insert({
-        id: crypto.randomUUID(),
-        company_name: draft.companyName,
-        tax_id: draft.taxId,
-        contact_name: draft.contactName,
-        contact_phone: draft.contactPhone,
-        contact_email: draft.contactEmail,
-        address: draft.address,
-        approx_purchase_date: draft.approxPurchaseDate,
-      })
-      .select(
-        "id,company_name,tax_id,contact_name,contact_phone,contact_email,address,approx_purchase_date,created_at",
-      )
+      .insert(insertPayload)
+      .select(CUSTOMER_SELECT)
       .single();
+    let data = response.data as CustomerRow | null;
+    let error = response.error;
+
+    if (error && isMissingContactEmailColumn(error)) {
+      const { contact_email: _contactEmail, ...legacyInsertPayload } = insertPayload;
+      const legacyResponse = await supabase
+        .from("customers")
+        .insert(legacyInsertPayload)
+        .select(CUSTOMER_SELECT_LEGACY)
+        .single();
+      data = (legacyResponse.data ?? null) as CustomerRow | null;
+      error = legacyResponse.error;
+    }
 
     if (error || !data) {
       return NextResponse.json({ error: error?.message ?? "เกิดข้อผิดพลาด" }, { status: 500 });

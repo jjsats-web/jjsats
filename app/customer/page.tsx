@@ -87,6 +87,7 @@ export default function CustomerPage() {
   const [customers, setCustomers] = useState<Customer[]>([]);
   const [saving, setSaving] = useState(false);
   const [loading, setLoading] = useState(true);
+  const [loadError, setLoadError] = useState("");
   const [editingCustomerId, setEditingCustomerId] = useState<string | null>(null);
   const { role, setRole } = usePinRole();
   const [pinProfile, setPinProfile] = useState<PinProfile>({
@@ -112,15 +113,17 @@ export default function CustomerPage() {
 
   const loadList = useCallback(async () => {
     setLoading(true);
+    setLoadError("");
     try {
       const res = await fetch(API, { cache: "no-store" });
       const data = (await res.json()) as Customer[] | { error: string };
       if (!res.ok || !Array.isArray(data)) {
+        setLoadError(!Array.isArray(data) && "error" in data ? data.error : "โหลดข้อมูลลูกค้าไม่สำเร็จ");
         return;
       }
       setCustomers(data);
     } catch {
-      // Ignore transient network errors
+      setLoadError("โหลดข้อมูลลูกค้าไม่สำเร็จ");
     } finally {
       setLoading(false);
     }
@@ -399,6 +402,21 @@ export default function CustomerPage() {
             </div>
           </div>
         </section>
+
+        {loadError ? (
+          <div
+            style={{
+              marginBottom: "1rem",
+              padding: "0.9rem 1rem",
+              borderRadius: "12px",
+              border: "1px solid #fca5a5",
+              background: "#fff1f2",
+              color: "#9f1239",
+            }}
+          >
+            โหลดข้อมูลลูกค้าไม่สำเร็จ: {loadError}
+          </div>
+        ) : null}
 
         <form id="customerForm" onSubmit={onSubmit} style={{ marginBottom: "1rem" }}>
           <div className="grid" style={{ gridTemplateColumns: "1fr 1fr" }}>
@@ -723,6 +741,11 @@ export default function CustomerPage() {
             </section>
           </form>
           <section className="mt-6 space-y-3" id="listMobile">
+            {loadError ? (
+              <div className="rounded-xl border border-rose-200 bg-rose-50 p-4 text-sm text-rose-700">
+                โหลดข้อมูลลูกค้าไม่สำเร็จ: {loadError}
+              </div>
+            ) : null}
             <div className="flex items-center justify-between">
               <h2 className="text-base font-semibold text-text-primary-light dark:text-text-primary-dark">
                 รายชื่อลูกค้า
