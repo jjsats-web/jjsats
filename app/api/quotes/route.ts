@@ -12,6 +12,7 @@ type QuoteItemDraft = {
 };
 
 type QuoteDraft = {
+  id?: string | null;
   customerId: string | null;
   companyName: string;
   systemName: string;
@@ -77,6 +78,7 @@ async function readDraft(request: Request): Promise<QuoteDraft | { error: string
   const total = Math.max(subtotal - appliedDiscount, 0);
 
   return {
+    id: readOptionalString(raw.id),
     customerId: readString(raw.customerId) || null,
     companyName,
     systemName,
@@ -92,6 +94,12 @@ export async function GET() {
 
   try {
     const supabase = createSupabaseServerClient();
+    
+    // Query exact count of all quotes
+    const { count } = await supabase
+      .from("quotes")
+      .select("id", { count: "exact", head: true });
+
     const { data, error } = await supabase
       .from("quotes")
       .select("id,company_name,system_name,items,total,created_at,customer_id,note")
@@ -102,7 +110,9 @@ export async function GET() {
       return NextResponse.json({ error: error.message }, { status: 500 });
     }
 
-    return NextResponse.json(data ?? []);
+    const response = NextResponse.json(data ?? []);
+    response.headers.set("x-total-count", String(count ?? 0));
+    return response;
   } catch (error) {
     const message =
       error instanceof Error ? error.message : "เกิดข้อผิดพลาดในการดึงประวัติใบเสนอราคา";
@@ -124,7 +134,7 @@ export async function POST(request: Request) {
     const { data, error } = await supabase
       .from("quotes")
       .insert({
-        id: crypto.randomUUID(),
+        id: draft.id || crypto.randomUUID(),
         customer_id: draft.customerId,
         company_name: draft.companyName,
         system_name: draft.systemName || draft.companyName,

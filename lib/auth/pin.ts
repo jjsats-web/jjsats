@@ -5,6 +5,7 @@ const PIN_COOKIE = "pin_auth";
 const ROLE_COOKIE = "pin_role";
 const ADMIN_ROLE = "admin";
 const MASTER_PIN = "000000";
+const FIRST_VISIT_PIN = "first_visit";
 
 export type PinSession = {
   pin: string;
@@ -24,7 +25,7 @@ export async function getPinSession(): Promise<PinSession> {
   const roleSource = roleCookie || roleHeader;
   const role = roleSource === ADMIN_ROLE ? "admin" : "user";
   const isAuthenticated = Boolean(pin && pin !== "ok");
-  const isAdmin = role === "admin" || pin === MASTER_PIN;
+  const isAdmin = role === "admin" || pin === MASTER_PIN || pin === FIRST_VISIT_PIN;
 
   return {
     pin,

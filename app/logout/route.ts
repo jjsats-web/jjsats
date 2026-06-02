@@ -18,8 +18,21 @@ function isSecureRequest(request: Request) {
   return isSecureProtocol && !isLocalhost(url.hostname);
 }
 
+function getRedirectBase(request: Request) {
+  const host = request.headers.get("host") || "localhost:3000";
+  const url = new URL(request.url);
+  const forwardedProto = request.headers
+    .get("x-forwarded-proto")
+    ?.split(",")[0]
+    ?.trim()
+    .toLowerCase();
+  const isSecure = url.protocol === "https:" || forwardedProto === "https";
+  return `${isSecure ? "https" : "http"}://${host}`;
+}
+
 export async function GET(request: Request) {
-  const redirectUrl = new URL("/pin", request.url);
+  const redirectBase = getRedirectBase(request);
+  const redirectUrl = new URL("/pin", redirectBase);
   const isSecure = isSecureRequest(request);
   const res = NextResponse.redirect(redirectUrl);
   res.cookies.set(PIN_COOKIE, "", {

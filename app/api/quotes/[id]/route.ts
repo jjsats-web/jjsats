@@ -146,6 +146,18 @@ export async function DELETE(
 
   try {
     const supabase = createSupabaseServerClient();
+    const { error: approvalError } = await supabase
+      .from("quote_approvals")
+      .delete()
+      .eq("quote_id", id);
+
+    if (approvalError) {
+      return NextResponse.json(
+        { error: approvalError.message || "เกิดข้อผิดพลาดในการลบคำขออนุมัติใบเสนอราคา" },
+        { status: 500 },
+      );
+    }
+
     const { error } = await supabase.from("quotes").delete().eq("id", id);
 
     if (error) {

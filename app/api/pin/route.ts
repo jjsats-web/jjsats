@@ -1,4 +1,4 @@
-import { cookies } from "next/headers";
+import { cookies, headers } from "next/headers";
 import { NextResponse } from "next/server";
 
 import { createSupabaseServerClient } from "@/lib/supabase/server";
@@ -6,6 +6,7 @@ import { createSupabaseServerClient } from "@/lib/supabase/server";
 const PIN_COOKIE = "pin_auth";
 const ROLE_COOKIE = "pin_role";
 const PIN_LENGTH = 6;
+const FIRST_VISIT_PIN = "first_visit";
 
 type PinRow = {
   pin: string | null;
@@ -89,12 +90,18 @@ export async function POST(request: Request) {
 
 export async function GET() {
   const cookieStore = await cookies();
+  const headerStore = await headers();
+  const pinHeader = headerStore.get("x-pin-auth")?.trim() ?? "";
+  const roleHeader = headerStore.get("x-pin-role")?.trim() ?? "";
   const pinCookie = cookieStore.get(PIN_COOKIE)?.value ?? "";
-  if (!pinCookie || pinCookie === "ok") {
+  const roleCookie = cookieStore.get(ROLE_COOKIE)?.value ?? "";
+  const activePin = pinCookie || pinHeader;
+  const activeRole = roleCookie || roleHeader;
+  if (!activePin || activePin === "ok" || activePin === FIRST_VISIT_PIN) {
     return NextResponse.json({
       firstName: "",
       lastName: "",
-      role: "user",
+      role: activePin === FIRST_VISIT_PIN ? "admin" : "user",
       signatureImage: "",
     });
   }
@@ -104,7 +111,7 @@ export async function GET() {
     const { data, error } = await supabase
       .from("pins")
       .select("first_name,last_name,role,signature_image")
-      .eq("pin", pinCookie)
+      .eq("pin", activePin)
       .limit(1)
       .maybeSingle();
 
@@ -113,7 +120,7 @@ export async function GET() {
     }
 
     const record = data as PinRow | null;
-    const role = record?.role === "admin" ? "admin" : "user";
+    const role = record?.role === "admin" || activeRole === "admin" ? "admin" : "user";
     return NextResponse.json({
       firstName: record?.first_name ?? "",
       lastName: record?.last_name ?? "",

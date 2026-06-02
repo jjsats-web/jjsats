@@ -1,8 +1,8 @@
 "use client";
 
-import Link from "next/link";
+import AppHeader from "@/components/AppHeader";
 import BottomNav from "@/components/BottomNav";
-import { type IconName } from "@/components/Icon";
+import Icon, { type IconName } from "@/components/Icon";
 import { usePinRole } from "@/components/PinRoleProvider";
 import type { FormEvent } from "react";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
@@ -75,11 +75,12 @@ export default function ProductPage() {
   const [saveError, setSaveError] = useState("");
   const { role, setRole } = usePinRole();
   const [isMobile, setIsMobile] = useState(false);
+  const [searchTerm, setSearchTerm] = useState("");
   const formRef = useRef<HTMLFormElement | null>(null);
 
   const activeHref = "/product";
   const menuItems: MenuItem[] = [
-    { id: "quote", href: "/", label: "ใบเสนอราคา", icon: "description" },
+    { id: "quote2", href: "/quotation", label: "เสนอราคา2", icon: "description" },
     { id: "customer", href: "/customer", label: "ทะเบียนลูกค้า", icon: "group" },
     {
       id: "product",
@@ -93,13 +94,6 @@ export default function ProductPage() {
       href: "/pin/register",
       label: "ลงทะเบียน",
       icon: "app_registration",
-      adminOnly: true,
-    },
-    {
-      id: "manage",
-      href: "/pin/manage",
-      label: "จัดการ PIN",
-      icon: "password",
       adminOnly: true,
     },
     {
@@ -344,45 +338,41 @@ export default function ProductPage() {
     });
   };
 
+  const filteredProducts = useMemo(() => {
+    const term = searchTerm.trim().toLowerCase();
+    if (!term) return products;
+    return products.filter((p) =>
+      [p.name, p.sku, p.description].join(" ").toLowerCase().includes(term)
+    );
+  }, [products, searchTerm]);
+
   const emptyText = useMemo(() => {
     if (!products.length && loading) return "กำลังโหลดรายการสินค้า…";
+    if (searchTerm.trim() && !filteredProducts.length) return "ไม่พบสินค้าที่ค้นหา";
     if (!products.length) return "ยังไม่มีสินค้า";
     return "";
-  }, [loading, products.length]);
+  }, [loading, products.length, filteredProducts.length, searchTerm]);
 
   return (
-    <main className="pb-24 lg:pb-0">
-      <header className="topbar">
-        <div className="topbar__brand">JJSATs Quotation</div>
-        <nav className="app-nav-hidden">
-          {visibleMenuItems.map((item) => (
-            <Link
-              key={item.id}
-              href={item.href}
-              prefetch={item.prefetch ?? false}
-              className={item.href === activeHref ? "active" : undefined}
-              aria-current={item.href === activeHref ? "page" : undefined}
-            >
-              {item.label}
-            </Link>
-          ))}
-        </nav>
-      </header>
+    <main className="product-admin-page pt-16 pb-24 lg:pb-0">
+      <AppHeader items={visibleMenuItems} activeHref={activeHref} />
 
-      <div className="container">
-        <h1>คลังสินค้าบริษัท</h1>
-        <p style={{ color: "#64748b", marginTop: "-.5rem", marginBottom: "1rem" }}>
+      <div className="product-admin-shell">
+        <div className="product-admin-heading">
+          <h1>คลังสินค้าบริษัท</h1>
+        </div>
+        <p className="product-admin-kicker" style={{ color: "#64748b", marginTop: "4px", marginBottom: "1.25rem" }}>
           เพิ่มสินค้ามาตรฐานไว้ใช้ดึงเข้าหน้าใบเสนอราคาได้ทันที
         </p>
 
         <form
           id="productForm"
           onSubmit={onSubmit}
-          style={{ marginBottom: "1.2rem" }}
+          className="product-admin-form"
           ref={formRef}
         >
-          <div className="grid" style={{ gridTemplateColumns: "repeat(2, minmax(0, 1fr))" }}>
-            <div>
+          <div className="product-admin-form__grid">
+            <div className="product-admin-field">
               <label htmlFor="productName">ชื่อสินค้า*</label>
               <input
                 id="productName"
@@ -393,7 +383,7 @@ export default function ProductPage() {
                 placeholder="เช่น กล้องวงจรปิด 4MP"
               />
             </div>
-            <div>
+            <div className="product-admin-field">
               <label htmlFor="productSku">รหัส/SKU</label>
               <input
                 id="productSku"
@@ -403,7 +393,7 @@ export default function ProductPage() {
                 placeholder="ถ้ามี"
               />
             </div>
-            <div>
+            <div className="product-admin-field">
               <label htmlFor="productUnit">หน่วย</label>
               <input
                 id="productUnit"
@@ -415,8 +405,8 @@ export default function ProductPage() {
             </div>
           </div>
 
-          <div className="grid" style={{ gridTemplateColumns: "repeat(3, minmax(0, 1fr))" }}>
-            <div>
+          <div className="product-admin-form__grid">
+            <div className="product-admin-field">
               <label htmlFor="productDealerPrice">Dealer</label>
               <input
                 id="productDealerPrice"
@@ -430,7 +420,7 @@ export default function ProductPage() {
                 placeholder="0.00"
               />
             </div>
-            <div>
+            <div className="product-admin-field">
               <label htmlFor="productProjectPrice">Project</label>
               <input
                 id="productProjectPrice"
@@ -444,7 +434,7 @@ export default function ProductPage() {
                 placeholder="0.00"
               />
             </div>
-            <div>
+            <div className="product-admin-field">
               <label htmlFor="productUserPrice">User</label>
               <input
                 id="productUserPrice"
@@ -460,57 +450,62 @@ export default function ProductPage() {
             </div>
           </div>
 
-          <div className="row" style={{ flexDirection: "column", gap: ".4rem" }}>
-            <label style={{ minWidth: 0 }} htmlFor="productDescription">
-              รายละเอียด
-            </label>
-            <textarea
-              id="productDescription"
-              rows={3}
-              value={draft.description}
-              onChange={(e) =>
-                setDraft((prev) => ({ ...prev, description: e.target.value }))
-              }
-              placeholder="รายละเอียดสั้นๆ"
-            />
+          <div className="product-admin-form__grid">
+            <div className="product-admin-field product-admin-field--full">
+              <label htmlFor="productDescription">
+                รายละเอียด
+              </label>
+              <textarea
+                id="productDescription"
+                rows={3}
+                value={draft.description}
+                onChange={(e) =>
+                  setDraft((prev) => ({ ...prev, description: e.target.value }))
+                }
+                placeholder="รายละเอียดสั้นๆ"
+              />
+            </div>
           </div>
 
-          <div className="actions center">
+          <div className="product-admin-form__actions">
             {editingId ? (
-              <button type="button" className="ghost-link" onClick={resetForm}>
+              <button type="button" className="product-admin-cancel" onClick={resetForm}>
                 ยกเลิกการแก้ไข
               </button>
             ) : null}
-            <button type="submit" disabled={saving} className="blob-button">
-              <span className="blob-button__text">
-                {editingId ? "อัปเดตสินค้า" : "บันทึกสินค้า"}
-              </span>
-              <span className="blob-button__inner" aria-hidden="true">
-                <span className="blob-button__blobs">
-                  <span className="blob-button__blob" />
-                  <span className="blob-button__blob" />
-                  <span className="blob-button__blob" />
-                  <span className="blob-button__blob" />
-                </span>
-              </span>
+            <button type="submit" disabled={saving} className="product-admin-submit">
+              {editingId ? "อัปเดตสินค้า" : "บันทึกสินค้า"}
             </button>
           </div>
 
           {saveError ? (
-            <div style={{ marginTop: ".65rem", color: "#b91c1c" }}>{saveError}</div>
+            <div className="product-admin-error">{saveError}</div>
           ) : null}
         </form>
 
-        <h2>รายการสินค้าบริษัท</h2>
+        <div className="product-admin-list-head">
+          <h2>รายการสินค้าบริษัท</h2>
+          <label className="product-admin-search">
+            <Icon name="search" className="h-4 w-4" />
+            <input
+              type="search"
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              placeholder="ค้นหาชื่อสินค้า/รหัส..."
+            />
+          </label>
+        </div>
+
         {loadError ? (
-          <div style={{ marginBottom: ".75rem", color: "#b91c1c" }}>{loadError}</div>
+          <div className="product-admin-error">{loadError}</div>
         ) : null}
+
         {isMobile ? (
           <div className="product-mobile-list">
             {emptyText ? (
               <div className="product-mobile-empty">{emptyText}</div>
             ) : (
-              products.map((product) => (
+              filteredProducts.map((product) => (
                 <div key={product.id} className="product-mobile-card">
                   <div className="product-mobile-card__name">{product.name}</div>
                   <div className="product-mobile-card__actions">
@@ -527,93 +522,76 @@ export default function ProductPage() {
             )}
           </div>
         ) : (
-          <table className="table" id="productTable">
-            <thead>
-              <tr>
-                <th>ชื่อสินค้า</th>
-                <th>ราคา</th>
-                <th>หน่วย</th>
-                <th>รหัส</th>
-                <th></th>
-              </tr>
-            </thead>
-            <tbody>
-              {emptyText ? (
+          <div className="product-admin-table-wrap">
+            <table className="product-admin-table" id="productTable">
+              <thead>
                 <tr>
-                  <td
-                    colSpan={5}
-                    style={{
-                      textAlign: "center",
-                      color: "#94a3b8",
-                      padding: "1rem",
-                    }}
-                  >
-                    {emptyText}
-                  </td>
+                  <th>ชื่อสินค้า</th>
+                  <th>ราคา</th>
+                  <th>หน่วย</th>
+                  <th>รหัส</th>
+                  <th></th>
                 </tr>
-              ) : null}
-              {products.map((product) => (
-                <tr key={product.id}>
-                  <td>
-                    <div>
-                      <strong>{product.name}</strong>
-                    </div>
-                    <div style={{ color: "#94a3b8", fontSize: ".9rem" }}>
-                      {product.description || ""}
-                    </div>
-                  </td>
-                  <td>
-                    <div style={{ display: "grid", gap: ".15rem" }}>
+              </thead>
+              <tbody>
+                {emptyText ? (
+                  <tr>
+                    <td colSpan={5} className="product-admin-table__empty">
+                      {emptyText}
+                    </td>
+                  </tr>
+                ) : null}
+                {filteredProducts.map((product) => (
+                  <tr key={product.id}>
+                    <td>
                       <div>
-                        Dealer: {priceFormatter.format(Number(product.dealerPrice || 0))}
+                        <strong>{product.name}</strong>
                       </div>
-                      <div>
-                        Project: {priceFormatter.format(Number(product.projectPrice || 0))}
+                      <div className="product-admin-card__meta" style={{ color: "#64748b", fontSize: ".9rem" }}>
+                        {product.description || ""}
                       </div>
-                      <div>User: {priceFormatter.format(Number(product.userPrice || 0))}</div>
-                    </div>
-                  </td>
-                  <td>{product.unit || "-"}</td>
-                  <td>{product.sku || "-"}</td>
-                  <td style={{ textAlign: "right" }}>
-                    <div style={{ display: "flex", gap: ".5rem", justifyContent: "flex-end" }}>
-                      <button
-                        type="button"
-                        className="blob-button product-action-button"
-                        onClick={() => startEdit(product)}
-                      >
-                        <span className="blob-button__text">แก้ไข</span>
-                        <span className="blob-button__inner" aria-hidden="true">
-                          <span className="blob-button__blobs">
-                            <span className="blob-button__blob" />
-                            <span className="blob-button__blob" />
-                            <span className="blob-button__blob" />
-                            <span className="blob-button__blob" />
-                          </span>
-                        </span>
-                      </button>
-                      <button
-                        type="button"
-                        className="blob-button product-action-button product-action-button--danger"
-                        onClick={() => void onDelete(product.id)}
-                        disabled={saving}
-                      >
-                        <span className="blob-button__text">ลบ</span>
-                        <span className="blob-button__inner" aria-hidden="true">
-                          <span className="blob-button__blobs">
-                            <span className="blob-button__blob" />
-                            <span className="blob-button__blob" />
-                            <span className="blob-button__blob" />
-                            <span className="blob-button__blob" />
-                          </span>
-                        </span>
-                      </button>
-                    </div>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
+                    </td>
+                    <td>
+                      <div style={{ display: "grid", gap: ".15rem" }}>
+                        <div>
+                          Dealer: {priceFormatter.format(Number(product.dealerPrice || 0))}
+                        </div>
+                        <div>
+                          Project: {priceFormatter.format(Number(product.projectPrice || 0))}
+                        </div>
+                        <div>User: {priceFormatter.format(Number(product.userPrice || 0))}</div>
+                      </div>
+                    </td>
+                    <td>{product.unit || "-"}</td>
+                    <td>{product.sku || "-"}</td>
+                    <td>
+                      <div className="product-admin-row-actions">
+                        <button
+                          type="button"
+                          className="product-admin-icon-button"
+                          onClick={() => startEdit(product)}
+                          aria-label={`แก้ไข ${product.name}`}
+                          title="แก้ไข"
+                        >
+                          <Icon name="edit" className="h-4 w-4" />
+                        </button>
+                        <button
+                          type="button"
+                          className="product-admin-icon-button product-admin-icon-button--danger"
+                          onClick={() => void onDelete(product.id)}
+                          disabled={saving}
+                          aria-label={`ลบ ${product.name}`}
+                          title="ลบ"
+                        >
+                          <Icon name="delete" className="h-4 w-4" />
+                        </button>
+                      </div>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
         )}
       </div>
       <svg className="blob-button__svg" aria-hidden="true" xmlns="http://www.w3.org/2000/svg">

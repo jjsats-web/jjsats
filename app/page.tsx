@@ -1,6 +1,6 @@
 "use client";
 
-import Link from "next/link";
+import AppHeader from "@/components/AppHeader";
 import { useSearchParams } from "next/navigation";
 import type { FormEvent } from "react";
 import { Suspense, useCallback, useEffect, useMemo, useRef, useState } from "react";
@@ -72,7 +72,6 @@ type ApprovalRequestStatus = "approved" | "pending";
 
 const HISTORY_PREVIEW_COUNT = 3;
 const NOTE_STORAGE_KEY = "quoteNote";
-const APPROVAL_COOLDOWN_MS = 10 * 60 * 1000;
 
 const initialForm: QuoteFormData = {
   companyName: "",
@@ -136,13 +135,7 @@ function formatQuoteDate(value: string) {
   return parsed.toLocaleString("th-TH", { dateStyle: "short", timeStyle: "short" });
 }
 
-function getCooldownRemainingMs(requestedAt: string | null) {
-  if (!requestedAt) return 0;
-  const timestamp = Date.parse(requestedAt);
-  if (Number.isNaN(timestamp)) return 0;
-  const elapsed = Date.now() - timestamp;
-  return Math.max(0, APPROVAL_COOLDOWN_MS - elapsed);
-}
+
 
 function escapeHtml(value: string) {
   return value
@@ -210,8 +203,8 @@ function HomePageClient() {
 
   const activeHref = "/";
   const menuItems: MenuItem[] = [
-    { id: "quote", href: "/", label: "ใบเสนอราคา", icon: "description" },
-    { id: "customer", href: "/customer", label: "ทะเบียนลูกค้า", icon: "group" },
+    { id: "quote2", href: "/quotation", label: "เสนอราคา2", icon: "description" },
+    { id: "customer", href: "/customer", label: "ทะเบียนลูกค้า", icon: "group", adminOnly: true },
     {
       id: "product",
       href: "/product",
@@ -224,13 +217,6 @@ function HomePageClient() {
       href: "/pin/register",
       label: "ลงทะเบียน",
       icon: "app_registration",
-      adminOnly: true,
-    },
-    {
-      id: "manage",
-      href: "/pin/manage",
-      label: "จัดการ PIN",
-      icon: "password",
       adminOnly: true,
     },
     {
@@ -247,9 +233,6 @@ function HomePageClient() {
   const [approvalBusyId, setApprovalBusyId] = useState<string | null>(null);
   const [approvalStatusById, setApprovalStatusById] = useState<
     Record<string, ApprovalRequestStatus>
-  >({});
-  const [approvalRequestedAtById, setApprovalRequestedAtById] = useState<
-    Record<string, string>
   >({});
 
   const showModal = async (title: string, icon: SwalIcon = "info") => {
@@ -370,25 +353,16 @@ function HomePageClient() {
         if (!res.ok || !data || typeof data !== "object") return;
 
         const nextStatuses: Record<string, ApprovalRequestStatus> = {};
-        const nextRequestedAt: Record<string, string> = {};
         const records = data.statuses ?? {};
         for (const [quoteId, record] of Object.entries(records)) {
           const status = typeof record?.status === "string" ? record.status : "";
-          const requestedAt =
-            typeof record?.requested_at === "string" ? record.requested_at : "";
           if (status === "approved" || status === "pending") {
             nextStatuses[quoteId] = status;
-          }
-          if (requestedAt) {
-            nextRequestedAt[quoteId] = requestedAt;
           }
         }
 
         if (!cancelled && Object.keys(nextStatuses).length) {
           setApprovalStatusById((prev) => ({ ...prev, ...nextStatuses }));
-        }
-        if (!cancelled && Object.keys(nextRequestedAt).length) {
-          setApprovalRequestedAtById((prev) => ({ ...prev, ...nextRequestedAt }));
         }
       } catch {
         // ignore status fetch errors
@@ -636,20 +610,7 @@ function HomePageClient() {
 
       if (data.status === "approved") return "approved";
       if (data.status === "pending") {
-        const retryAfterSeconds =
-          typeof data.retryAfterSeconds === "number" ? data.retryAfterSeconds : 0;
-        if (data.requested) {
-          setApprovalRequestedAtById((prev) => ({
-            ...prev,
-            [quote.id]: new Date().toISOString(),
-          }));
-        }
-        const message = data.requested
-          ? "ส่งคำขออนุมัติแล้ว กรุณารอการอนุมัติ"
-          : retryAfterSeconds > 0
-            ? `ยังไม่ครบเวลา สามารถขอใหม่ได้อีก ${Math.ceil(retryAfterSeconds / 60)} นาที`
-            : "มีคำขออนุมัติอยู่แล้ว กรุณารอการอนุมัติ";
-        await showModal(message, "info");
+        await showModal("ขออนุมัติแล้ว", "info");
         return "pending";
       }
 
@@ -1356,23 +1317,8 @@ function HomePageClient() {
     };
 
   return (
-    <main className="pb-24 lg:pb-0 quote-page">
-      <header className="topbar">
-        <div className="topbar__brand">JJSATs Quotation</div>
-        <nav className="app-nav-hidden">
-          {visibleMenuItems.map((item) => (
-              <Link
-                key={item.id}
-                href={item.href}
-                prefetch={item.prefetch ?? false}
-                className={item.href === activeHref ? "active" : undefined}
-                aria-current={item.href === activeHref ? "page" : undefined}
-              >
-              {item.label}
-            </Link>
-          ))}
-        </nav>
-      </header>
+    <main className="pt-16 pb-24 lg:pb-0 quote-page">
+      <AppHeader items={visibleMenuItems} activeHref={activeHref} />
 
       <div className="container">
         <div style={{ display: "flex", flexDirection: "column", gap: "0.2rem" }}>
@@ -1660,21 +1606,12 @@ function HomePageClient() {
               const approvalStatus = approvalStatusById[quote.id];
               const isApproved = approvalStatus === "approved";
               const isPendingApproval = approvalStatus === "pending";
-              const approvalRequestedAt = approvalRequestedAtById[quote.id] ?? null;
-              const cooldownRemainingMs = isPendingApproval
-                ? getCooldownRemainingMs(approvalRequestedAt)
-                : 0;
-              const cooldownMinutes =
-                cooldownRemainingMs > 0 ? Math.ceil(cooldownRemainingMs / 60000) : 0;
-              const canRequestAgain = !isPendingApproval || cooldownRemainingMs <= 0;
               const actionLabel = isApproved
                 ? "ดาวโหลด"
                 : isApprovalPending
                   ? "กำลังส่งคำขอ..."
                   : isPendingApproval
-                    ? cooldownRemainingMs > 0
-                      ? `รออีก ${cooldownMinutes} นาที`
-                      : "ขออนุมัติใหม่"
+                    ? "ขออนุมัติใหม่"
                     : "ขออนุมัติ";
               return (
                 <div key={quote.id} className="quote-history__card">
@@ -1726,7 +1663,7 @@ function HomePageClient() {
                             ? exportQuotePdf(quote)
                             : handleRequestApproval(quote))
                         }
-                        disabled={isApprovalPending || !canRequestAgain}
+                        disabled={isApprovalPending}
                       >
                         <span className="blob-button__text">{actionLabel}</span>
                         <span className="blob-button__inner" aria-hidden="true">

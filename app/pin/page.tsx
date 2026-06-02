@@ -3,6 +3,8 @@
 import { useSearchParams } from "next/navigation";
 import { Suspense, useEffect, useRef, useState } from "react";
 
+import Icon from "@/components/Icon";
+
 type PinStatus = "idle" | "correct" | "wrong";
 
 const PIN_LENGTH = 6;
@@ -20,8 +22,8 @@ function PinPageClient() {
   const searchParams = useSearchParams();
   const redirectTo = (() => {
     const value = searchParams.get("redirectTo");
-    if (!value || !value.startsWith("/") || value.startsWith("/pin")) {
-      return "/customer";
+    if (!value || value === "/" || !value.startsWith("/") || value.startsWith("/pin")) {
+      return "/quotation";
     }
     return value;
   })();
@@ -90,19 +92,35 @@ function PinPageClient() {
 
   const dots = Array.from({ length: PIN_LENGTH });
   const digits = ["1", "2", "3", "4", "5", "6", "7", "8", "9", "0"];
+  const filledCount = `${pin.length}/${PIN_LENGTH}`;
 
   return (
     <main className={`pin-page ${status !== "idle" ? `pin-${status}` : ""}`}>
+      <div className="pin-page__ambient" aria-hidden="true">
+        <span />
+        <span />
+        <span />
+      </div>
       <form ref={formRef} method="POST" action="/pin/login" style={{ display: "contents" }}>
         <input type="hidden" name="pin" value={pin} readOnly />
         <input type="hidden" name="redirectTo" value={redirectTo} readOnly />
         {debugEnabled ? <input type="hidden" name="debug" value="1" readOnly /> : null}
       </form>
       <div className="pin-card">
-        <h1>กรอกรหัส PIN</h1>
-        <p className="pin-hint">กรุณากรอกรหัส PIN เพื่อเข้าหน้าทะเบียนลูกค้า</p>
+        <div className="pin-card__top">
+          <span className="pin-card__icon">
+            <Icon name="password" />
+          </span>
+          <span className="pin-card__status">{pending ? "กำลังตรวจสอบ" : filledCount}</span>
+        </div>
 
-        <div className="pin-dots">
+        <div className="pin-card__copy">
+          <p className="pin-card__eyebrow">JJSAT Quotation</p>
+          <h1>กรอกรหัส PIN</h1>
+          <p className="pin-hint">เข้าสู่ระบบเพื่อจัดการใบเสนอราคาและข้อมูลลูกค้า</p>
+        </div>
+
+        <div className="pin-dots" aria-label={`กรอก PIN แล้ว ${filledCount} หลัก`}>
           {dots.map((_, idx) => (
             <span
               key={idx}
@@ -113,7 +131,15 @@ function PinPageClient() {
           ))}
         </div>
 
-        {error ? <div className="pin-error" style={{ textAlign: "center" }}>{error}</div> : null}
+        <div className="pin-message" aria-live="polite">
+          {error ? (
+            <div className="pin-error">{error}</div>
+          ) : pending ? (
+            <div className="pin-loader" aria-label="กำลังเข้าสู่ระบบ" />
+          ) : (
+            " "
+          )}
+        </div>
 
         <div className="pin-pad">
           {digits.map((digit, idx) => (
@@ -123,6 +149,7 @@ function PinPageClient() {
               className="number"
               onClick={() => handleDigit(digit)}
               disabled={pending}
+              aria-label={`เลข ${digit}`}
             >
               {digit}
             </button>

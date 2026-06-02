@@ -8,7 +8,6 @@ import { createSupabaseServerClient } from "@/lib/supabase/server";
 export const dynamic = "force-dynamic";
 
 const PIN_COOKIE = "pin_auth";
-const APPROVAL_COOLDOWN_MS = 10 * 60 * 1000;
 
 type QuoteRow = {
   id: string;
@@ -59,28 +58,29 @@ function canUseTelegramInlineUrl(value: string) {
     const parsed = new URL(value);
     if (parsed.protocol !== "http:" && parsed.protocol !== "https:") return false;
     const hostname = parsed.hostname.toLowerCase();
-    if (!hostname || hostname === "localhost" || hostname.endsWith(".local")) {
+    if (
+      !hostname ||
+      hostname === "localhost" ||
+      hostname.endsWith(".local") ||
+      hostname.endsWith(".test") ||
+      hostname.endsWith(".example") ||
+      hostname.endsWith(".invalid") ||
+      hostname.endsWith(".localhost")
+    ) {
+      return false;
+    }
+    if (hostname.includes(":") || hostname.includes("[") || hostname.includes("]")) {
       return false;
     }
     if (isPrivateIpv4(hostname)) return false;
+    if (!hostname.includes(".")) return false;
     return true;
   } catch {
     return false;
   }
 }
 
-function parseTimestamp(value: unknown) {
-  if (typeof value !== "string" || !value.trim()) return null;
-  const parsed = Date.parse(value);
-  return Number.isNaN(parsed) ? null : parsed;
-}
 
-function getCooldownRemainingMs(requestedAt: string | null) {
-  const timestamp = parseTimestamp(requestedAt);
-  if (!timestamp) return 0;
-  const elapsed = Date.now() - timestamp;
-  return Math.max(0, APPROVAL_COOLDOWN_MS - elapsed);
-}
 
 function escapeHtml(value: string) {
   return value
@@ -161,16 +161,6 @@ export async function POST(request: Request) {
       return NextResponse.json({ status: "approved" });
     }
 
-    if (latestStatus === "pending") {
-      const remainingMs = getCooldownRemainingMs(latest?.requested_at ?? null);
-      if (remainingMs > 0) {
-        return NextResponse.json({
-          status: "pending",
-          requested: false,
-          retryAfterSeconds: Math.ceil(remainingMs / 1000),
-        });
-      }
-    }
 
     const requesterName = await readRequesterName(pinCookie);
     const requesterLabel = requesterName || (pinCookie ? `PIN ${pinCookie}` : "");

@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import AppHeader from "@/components/AppHeader";
 import BottomNav from "@/components/BottomNav";
 import Icon, { type IconName } from "@/components/Icon";
 import { usePinRole } from "@/components/PinRoleProvider";
@@ -96,6 +97,7 @@ export default function CustomerPage() {
   const [loading, setLoading] = useState(true);
   const [loadError, setLoadError] = useState("");
   const [editingCustomerId, setEditingCustomerId] = useState<string | null>(null);
+  const [searchTerm, setSearchTerm] = useState("");
   const { role, setRole } = usePinRole();
   const [pinProfile, setPinProfile] = useState<PinProfile>({
     firstName: "",
@@ -259,11 +261,23 @@ export default function CustomerPage() {
     }
   };
 
+  const filteredCustomers = useMemo(() => {
+    const term = searchTerm.trim().toLowerCase();
+    if (!term) return customers;
+    return customers.filter((c) =>
+      [c.companyName, c.contactName, c.contactPhone, c.contactEmail, c.address, c.taxId]
+        .join(" ")
+        .toLowerCase()
+        .includes(term)
+    );
+  }, [customers, searchTerm]);
+
   const emptyState = useMemo(() => {
     if (loading) return "กำลังโหลดข้อมูลลูกค้า…";
-    if (customers.length) return "";
-    return "ยังไม่มีข้อมูลลูกค้า";
-  }, [customers.length, loading]);
+    if (searchTerm.trim() && !filteredCustomers.length) return "ไม่พบข้อมูลลูกค้าที่ค้นหา";
+    if (!customers.length) return "ยังไม่มีข้อมูลลูกค้า";
+    return "";
+  }, [customers.length, filteredCustomers.length, loading, searchTerm]);
 
   const customersThisMonth = useMemo(() => {
     if (!customers.length) return 0;
@@ -281,7 +295,7 @@ export default function CustomerPage() {
   const customersThisMonthLabel = loading ? "-" : formatSignedCount(customersThisMonth);
   const activeHref = "/customer";
   const menuItems: MenuItem[] = [
-    { id: "quote", href: "/", label: "ใบเสนอราคา", icon: "description" },
+    { id: "quote2", href: "/quotation", label: "เสนอราคา2", icon: "description" },
     { id: "customer", href: "/customer", label: "ทะเบียนลูกค้า", icon: "group" },
     {
       id: "product",
@@ -295,13 +309,6 @@ export default function CustomerPage() {
       href: "/pin/register",
       label: "ลงทะเบียน",
       icon: "app_registration",
-      adminOnly: true,
-    },
-    {
-      id: "manage",
-      href: "/pin/manage",
-      label: "จัดการ PIN",
-      icon: "password",
       adminOnly: true,
     },
     {
@@ -329,299 +336,285 @@ export default function CustomerPage() {
   }, [customers, loading]);
 
   return (
-    <main>
+    <main className="customer-admin-page pt-16 pb-24 lg:pb-0">
       <div className="customer-desktop">
-        <header className="topbar">
-          <div className="topbar__brand">JJSATs Quotation</div>
-          <nav>
-            {visibleMenuItems.map((item) => (
-              <Link
-                key={item.id}
-                href={item.href}
-                className={item.href === activeHref ? "active" : undefined}
-                aria-current={item.href === activeHref ? "page" : undefined}
-              >
-                {item.label}
-              </Link>
-            ))}
-          </nav>
-        </header>
+        <AppHeader items={visibleMenuItems} activeHref={activeHref} />
 
-      <div className="container">
-        <div style={{ display: "flex", flexDirection: "column", gap: "0.2rem" }}>
-          {pinProfile.firstName || pinProfile.lastName ? (
-            <div style={{ color: "var(--muted)", fontSize: "0.95rem" }}>
-              คุณ {`${pinProfile.firstName} ${pinProfile.lastName}`.trim()}
-            </div>
-          ) : null}
-          <h1>ลงทะเบียนลูกค้า</h1>
+      <div className="customer-admin-shell">
+        <div className="customer-admin-heading-wrapper flex items-center gap-3 mb-6">
+          <div className="customer-title-icon-box bg-[#741010] text-white flex items-center justify-center rounded-xl" style={{ width: "44px", height: "44px", flexShrink: 0 }}>
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" className="h-6 w-6">
+              <path d="M12 7V3H2v18h20V7H12zM6 19H4v-2h2v2zm0-4H4v-2h2v2zm0-4H4V9h2v2zm0-4H4V5h2v2zm6 12h-2v-2h2v2zm0-4h-2v-2h2v2zm0-4h-2V9h2v2zm0-4h-2V5h2v2zm8 12h-2v-2h2v2zm0-4h-2v-2h2v2z"/>
+            </svg>
+          </div>
+          <div className="customer-admin-heading">
+            <h1>ลงทะเบียนลูกค้า</h1>
+            {pinProfile.firstName || pinProfile.lastName ? (
+              <span className="customer-admin-kicker">
+                คุณ {`${pinProfile.firstName} ${pinProfile.lastName}`.trim()}
+              </span>
+            ) : null}
+          </div>
         </div>
 
-        <section className="dashboard-summary">
-          <h2 className="dashboard-summary__title">สรุปข้อมูล</h2>
-          <div className="dashboard-summary__content">
-            <div className="dashboard-summary__cards">
-              <article className="summary-card summary-card--rose">
-                <div className="summary-card__icon" aria-hidden="true">
-                  <svg
-                    viewBox="0 0 24 24"
-                    fill="none"
-                    stroke="currentColor"
-                    strokeWidth="1.6"
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                  >
-                    <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2" />
-                    <circle cx="9" cy="7" r="4" />
-                    <path d="M23 21v-2a4 4 0 0 0-3-3.87" />
-                    <path d="M16 3.13a4 4 0 0 1 0 7.75" />
-                  </svg>
-                </div>
-                <div>
-                  <p className="summary-card__label">ลูกค้าทั้งหมด</p>
-                  <p className="summary-card__value">{totalCustomersLabel}</p>
-                </div>
-              </article>
-              <article className="summary-card summary-card--sky">
-                <div className="summary-card__icon" aria-hidden="true">
-                  <svg
-                    viewBox="0 0 24 24"
-                    fill="none"
-                    stroke="currentColor"
-                    strokeWidth="1.6"
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                  >
-                    <polyline points="23 6 13.5 15.5 8.5 10.5 1 18" />
-                    <polyline points="17 6 23 6 23 12" />
-                  </svg>
-                </div>
-                <div>
-                  <p className="summary-card__label">เพิ่มขึ้นเดือนนี้</p>
-                  <p className="summary-card__value">{customersThisMonthLabel}</p>
-                </div>
-              </article>
-            </div>
-            <div className="dashboard-summary__latest">
-              <h3 className="dashboard-summary__subtitle">การดำเนินการล่าสุด</h3>
-              <ul className="dashboard-summary__list">
-                {recentActions.length ? (
-                  recentActions.map((action) => (
-                    <li key={action.id} className="dashboard-summary__item">
-                      <span
-                        className={`dashboard-summary__dot dashboard-summary__dot--${action.tone}`}
-                      />
-                      <span>{action.label}</span>
-                    </li>
-                  ))
-                ) : (
-                  <li className="dashboard-summary__empty">ยังไม่มีการดำเนินการล่าสุด</li>
-                )}
-              </ul>
-            </div>
-          </div>
-        </section>
-
-        {loadError ? (
-          <div
-            style={{
-              marginBottom: "1rem",
-              padding: "0.9rem 1rem",
-              borderRadius: "12px",
-              border: "1px solid #fca5a5",
-              background: "#fff1f2",
-              color: "#9f1239",
-            }}
-          >
-            โหลดข้อมูลลูกค้าไม่สำเร็จ: {loadError}
-          </div>
-        ) : null}
-
-        <form id="customerForm" onSubmit={onSubmit} style={{ marginBottom: "1rem" }}>
-          <div className="grid" style={{ gridTemplateColumns: "1fr 1fr" }}>
-            <div>
-              <label htmlFor="companyName">ชื่อบริษัท</label>
-              <input
-                id="companyName"
-                type="text"
-                value={draft.companyName}
-                onChange={(e) => setDraft((prev) => ({ ...prev, companyName: e.target.value }))}
-                placeholder="เช่น บริษัท เอ บี ซี จำกัด"
-              />
-            </div>
-            <div>
-              <label htmlFor="taxId">เลขประจำตัวผู้เสียภาษี</label>
-              <input
-                id="taxId"
-                type="text"
-                value={draft.taxId}
-                inputMode="numeric"
-                maxLength={13}
-                onChange={(e) =>
-                  setDraft((prev) => ({ ...prev, taxId: normalizeTaxId(e.target.value) }))
-                }
-                placeholder="13 หลัก"
-              />
-            </div>
-          </div>
-
-          <div className="grid" style={{ gridTemplateColumns: "1fr 1fr" }}>
-            <div>
-              <label htmlFor="contactName">ชื่อผู้ติดต่อ</label>
-              <input
-                id="contactName"
-                type="text"
-                value={draft.contactName}
-                onChange={(e) => setDraft((prev) => ({ ...prev, contactName: e.target.value }))}
-              />
-            </div>
-            <div>
-              <label htmlFor="contactPhone">เบอร์ผู้ติดต่อ</label>
-              <input
-                id="contactPhone"
-                type="text"
-                value={draft.contactPhone}
-                onChange={(e) =>
-                  setDraft((prev) => ({ ...prev, contactPhone: e.target.value }))
-                }
-              />
-            </div>
-          </div>
-
-          <div>
-            <label htmlFor="contactEmail">E-mail</label>
-            <input
-              id="contactEmail"
-              type="email"
-              value={draft.contactEmail}
-              onChange={(e) =>
-                setDraft((prev) => ({ ...prev, contactEmail: e.target.value }))
-              }
-              placeholder="example@company.com"
-            />
-          </div>
-
-          <div className="grid" style={{ gridTemplateColumns: "1fr 1fr" }}>
-            <div>
-              <label htmlFor="approxPurchaseDate">ประมาณวันที่ซื้อ</label>
-              <input
-                id="approxPurchaseDate"
-                type="text"
-                value={draft.approxPurchaseDate}
-                onChange={(e) =>
-                  setDraft((prev) => ({ ...prev, approxPurchaseDate: e.target.value }))
-                }
-                placeholder="เช่น 2025-12-31 หรือ ภายใน Q1/2025"
-              />
-            </div>
-            <div>
-              <label htmlFor="address">ที่อยู่</label>
-              <input
-                id="address"
-                type="text"
-                value={draft.address}
-                onChange={(e) => setDraft((prev) => ({ ...prev, address: e.target.value }))}
-              />
-            </div>
-          </div>
-
-          <div className="actions center">
-            {editingCustomerId ? (
-              <button
-                type="button"
-                className="ghost-link"
-                style={{ cursor: "pointer" }}
-                onClick={cancelEdit}
+        <div className="customer-page-split-layout">
+          {/* Main content: Form */}
+          <div className="customer-page-main-content">
+            {loadError ? (
+              <div
+                style={{
+                  marginBottom: "1rem",
+                  padding: "0.9rem 1rem",
+                  borderRadius: "12px",
+                  border: "1px solid #fca5a5",
+                  background: "#fff1f2",
+                  color: "#9f1239",
+                }}
               >
-                ยกเลิก
-              </button>
+                โหลดข้อมูลลูกค้าไม่สำเร็จ: {loadError}
+              </div>
             ) : null}
-            <button type="submit" disabled={saving} className="blob-button">
-              <span className="blob-button__text">
-                {saving ? "กำลังบันทึก…" : editingCustomerId ? "อัปเดตลูกค้า" : "บันทึกลูกค้า"}
-              </span>
-              <span className="blob-button__inner" aria-hidden="true">
-                <span className="blob-button__blobs">
-                  <span className="blob-button__blob" />
-                  <span className="blob-button__blob" />
-                  <span className="blob-button__blob" />
-                  <span className="blob-button__blob" />
-                </span>
-              </span>
-            </button>
-          </div>
-        </form>
 
-        <h2>รายชื่อลูกค้า</h2>
-        <div id="list">
-          {emptyState ? <div style={{ color: "var(--muted)" }}>{emptyState}</div> : null}
-          {customers.map((customer) => {
-            const display = customer.companyName.trim() || "(ไม่ระบุชื่อ)";
-            return (
-              <div key={customer.id} className="card">
-                <div>
-                  <div>
-                    <strong>{display}</strong>
+            <form id="customerForm" onSubmit={onSubmit} className="customer-admin-form-modern">
+              <div className="customer-form-split">
+                {/* Left Column: ข้อมูลบริษัท */}
+                <div className="customer-form-section">
+                  <h3 className="customer-form-section-title">ข้อมูลบริษัท</h3>
+                  
+                  <div className="customer-form-field">
+                    <label htmlFor="companyName">ชื่อบริษัท</label>
+                    <input
+                      id="companyName"
+                      type="text"
+                      value={draft.companyName}
+                      onChange={(e) => setDraft((prev) => ({ ...prev, companyName: e.target.value }))}
+                      placeholder="กรอกชื่อของคุณ"
+                    />
                   </div>
-                  <div style={{ opacity: 0.7 }}>
-                    {customer.contactName}{" "}
-                    {customer.contactPhone ? `· ${customer.contactPhone}` : ""}
-                    {customer.contactEmail ? `· ${customer.contactEmail}` : ""}
+
+                  <div className="customer-form-field">
+                    <label htmlFor="taxId">เลขประจำตัวผู้เสียภาษี</label>
+                    <input
+                      id="taxId"
+                      type="text"
+                      value={draft.taxId}
+                      inputMode="numeric"
+                      maxLength={13}
+                      onChange={(e) =>
+                        setDraft((prev) => ({ ...prev, taxId: normalizeTaxId(e.target.value) }))
+                      }
+                      placeholder="เลขประจำตัวผู้เสียภาษี"
+                    />
                   </div>
-                  <div style={{ opacity: 0.7 }}>{customer.address}</div>
-                  {customer.taxId ? (
-                    <div style={{ opacity: 0.7, marginTop: ".25rem" }}>
-                      เลขประจำตัวผู้เสียภาษี: {customer.taxId}
-                    </div>
-                  ) : null}
+
+                  <div className="customer-form-field">
+                    <label htmlFor="contactName">ชื่อผู้ติดต่อ</label>
+                    <input
+                      id="contactName"
+                      type="text"
+                      value={draft.contactName}
+                      onChange={(e) => setDraft((prev) => ({ ...prev, contactName: e.target.value }))}
+                      placeholder="กรอกนามสกุลของคุณ"
+                    />
+                  </div>
+
+                  <div className="customer-form-field">
+                    <label htmlFor="contactPhone">เบอร์ผู้ติดต่อ</label>
+                    <input
+                      id="contactPhone"
+                      type="text"
+                      value={draft.contactPhone}
+                      onChange={(e) =>
+                        setDraft((prev) => ({ ...prev, contactPhone: e.target.value }))
+                      }
+                      placeholder="เบอร์ผู้ติดต่อของคุณ"
+                    />
+                  </div>
                 </div>
-                <div style={{ textAlign: "right" }}>
-                  <div style={{ opacity: 0.7, fontSize: "0.9rem" }}>
-                    {customer.approxPurchaseDate ? `คาดซื้อ: ${customer.approxPurchaseDate}` : ""}
+
+                {/* Right Column: ข้อมูลการติดต่อและสั่งซื้อ */}
+                <div className="customer-form-section">
+                  <h3 className="customer-form-section-title">ข้อมูลการติดต่อและสั่งซื้อ</h3>
+
+                  <div className="customer-form-field">
+                    <label htmlFor="contactEmail">E-mail</label>
+                    <input
+                      id="contactEmail"
+                      type="email"
+                      value={draft.contactEmail}
+                      onChange={(e) =>
+                        setDraft((prev) => ({ ...prev, contactEmail: e.target.value }))
+                      }
+                      placeholder="E-mail"
+                    />
                   </div>
-                  <div
-                    style={{
-                      marginTop: ".4rem",
-                      display: "flex",
-                      flexDirection: "column",
-                      alignItems: "flex-end",
-                      gap: ".35rem",
-                    }}
-                  >
-                    <Link
-                      className="blob-button product-action-button inline-flex items-center justify-center"
-                      href={`/?customer=${encodeURIComponent(customer.id)}`}
-                    >
-                      <span className="blob-button__text">เลือก</span>
-                      <span className="blob-button__inner" aria-hidden="true">
-                        <span className="blob-button__blobs">
-                          <span className="blob-button__blob" />
-                          <span className="blob-button__blob" />
-                          <span className="blob-button__blob" />
-                          <span className="blob-button__blob" />
-                        </span>
-                      </span>
-                    </Link>
-                    <button
-                      type="button"
-                      className="blob-button product-action-button inline-flex items-center justify-center"
-                      onClick={() => beginEdit(customer)}
-                    >
-                      <span className="blob-button__text">แก้ไข</span>
-                      <span className="blob-button__inner" aria-hidden="true">
-                        <span className="blob-button__blobs">
-                          <span className="blob-button__blob" />
-                          <span className="blob-button__blob" />
-                          <span className="blob-button__blob" />
-                          <span className="blob-button__blob" />
-                        </span>
-                      </span>
-                    </button>
+
+                  <div className="customer-form-field">
+                    <label htmlFor="approxPurchaseDate">ประมาณวันที่ซื้อ</label>
+                    <div className="input-with-icon-wrapper">
+                      <input
+                        id="approxPurchaseDate"
+                        type="text"
+                        value={draft.approxPurchaseDate}
+                        onChange={(e) =>
+                          setDraft((prev) => ({ ...prev, approxPurchaseDate: e.target.value }))
+                        }
+                        placeholder="ประมาณวันที่ซื้อ"
+                      />
+                      <div className="input-calendar-icon">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-slate-400">
+                          <rect width="18" height="18" x="3" y="4" rx="2" ry="2"/>
+                          <line x1="16" x2="16" y1="2" y2="6"/>
+                          <line x1="8" x2="8" y1="2" y2="6"/>
+                          <line x1="3" x2="21" y1="10" y2="10"/>
+                        </svg>
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className="customer-form-field">
+                    <label htmlFor="address">ที่อยู่</label>
+                    <textarea
+                      id="address"
+                      value={draft.address}
+                      onChange={(e) => setDraft((prev) => ({ ...prev, address: e.target.value }))}
+                      placeholder="ที่อยู่"
+                      rows={4}
+                    />
                   </div>
                 </div>
               </div>
-            );
-          })}
+
+              <div className="customer-form-actions-modern">
+                {editingCustomerId ? (
+                  <button
+                    type="button"
+                    className="customer-btn-cancel-modern"
+                    onClick={cancelEdit}
+                  >
+                    ยกเลิก
+                  </button>
+                ) : null}
+                <button type="submit" disabled={saving} className="customer-btn-submit-modern">
+                  {saving ? "กำลังบันทึก…" : editingCustomerId ? "อัปเดตลูกค้า" : "บันทึกลูกค้า"}
+                </button>
+              </div>
+            </form>
+          </div>
+
+          {/* Sidebar content: Metric Cards & Actions */}
+          <aside className="customer-page-sidebar">
+            <div className="customer-sidebar-grid">
+              {/* Card 1 */}
+              <div className="customer-metric-card">
+                <div className="customer-metric-card-icon">
+                  <svg xmlns="http://www.w3.org/2000/svg" width="40" height="40" viewBox="0 0 24 24" fill="currentColor" className="text-[#741010]">
+                    <path d="M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z"/>
+                  </svg>
+                </div>
+                <div className="customer-metric-card-value">{totalCustomersLabel}</div>
+                <div className="customer-metric-card-label">ลูกค้าทั้งหมด</div>
+              </div>
+
+              {/* Card 2 */}
+              <div className="customer-metric-card">
+                <div className="customer-metric-card-icon">
+                  <svg xmlns="http://www.w3.org/2000/svg" width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" className="text-[#741010]">
+                    <rect width="18" height="18" x="3" y="4" rx="2" ry="2"/>
+                    <line x1="16" x2="16" y1="2" y2="6"/>
+                    <line x1="8" x2="8" y1="2" y2="6"/>
+                    <line x1="3" x2="21" y1="10" y2="10"/>
+                    <path d="m9 16 2 2 4-4"/>
+                  </svg>
+                </div>
+                <div className="customer-metric-card-value">{customersThisMonthLabel}</div>
+                <div className="customer-metric-card-label">ลูกค้าในเดือนนี้</div>
+              </div>
+              
+              {/* Latest Actions */}
+              <div className="customer-sidebar-latest">
+                <h3 className="customer-sidebar-latest-title">การดำเนินการล่าสุด</h3>
+                <ul className="customer-sidebar-latest-list">
+                  {recentActions.length ? (
+                    recentActions.map((action) => (
+                      <li key={action.id} className="customer-sidebar-latest-item">
+                        <span className={`customer-sidebar-latest-dot customer-sidebar-latest-dot--${action.tone}`} />
+                        <span>{action.label}</span>
+                      </li>
+                    ))
+                  ) : (
+                    <li className="customer-sidebar-latest-empty">ยังไม่มีการดำเนินการล่าสุด</li>
+                  )}
+                </ul>
+              </div>
+            </div>
+          </aside>
+        </div>
+
+        {/* Customer List section */}
+        <div className="customer-list-head-modern">
+          <h2 className="customer-list-title-modern">รายชื่อลูกค้า</h2>
+          <label className="customer-search-modern">
+            <Icon name="search" className="customer-search-icon-modern h-4 w-4" />
+            <input
+              type="search"
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              placeholder="ค้นหาชื่อบริษัท..."
+            />
+          </label>
+        </div>
+
+        <div className="customer-table-container-modern">
+          <table className="customer-table-modern">
+            <thead>
+              <tr>
+                <th>ชื่อบริษัท</th>
+                <th>เลขประจำตัวผู้เสียภาษี</th>
+                <th>ชื่อผู้ติดต่อ</th>
+                <th>เบอร์ผู้ติดต่อ</th>
+                <th style={{ textAlign: "center" }}>จัดการ</th>
+              </tr>
+            </thead>
+            <tbody>
+              {emptyState ? (
+                <tr>
+                  <td colSpan={5} style={{ textAlign: "center", color: "#94a3b8", padding: "24px" }}>
+                    {emptyState}
+                  </td>
+                </tr>
+              ) : (
+                filteredCustomers.map((customer) => {
+                  const display = customer.companyName.trim() || "(ไม่ระบุชื่อ)";
+                  return (
+                    <tr key={customer.id}>
+                      <td style={{ fontWeight: 600 }}>{display}</td>
+                      <td>{customer.taxId || "-"}</td>
+                      <td>{customer.contactName || "-"}</td>
+                      <td>{customer.contactPhone || "-"}</td>
+                      <td>
+                        <div className="customer-table-actions-modern" style={{ justifyContent: "center" }}>
+                          <Link
+                            className="customer-table-btn-select"
+                            href={`/?customer=${encodeURIComponent(customer.id)}`}
+                          >
+                            เลือก
+                          </Link>
+                          <button
+                            type="button"
+                            className="customer-table-btn-edit"
+                            onClick={() => beginEdit(customer)}
+                          >
+                            แก้ไข
+                          </button>
+                        </div>
+                      </td>
+                    </tr>
+                  );
+                })
+              )}
+            </tbody>
+          </table>
         </div>
       </div>
       <svg className="blob-button__svg" aria-hidden="true" xmlns="http://www.w3.org/2000/svg">
@@ -770,7 +763,7 @@ export default function CustomerPage() {
                 รายชื่อลูกค้า
               </h2>
               <span className="text-xs text-text-secondary-light dark:text-text-secondary-dark">
-                {loading ? "กำลังโหลด..." : `${customers.length} รายการ`}
+                {loading ? "กำลังโหลด..." : `${filteredCustomers.length} รายการ`}
               </span>
             </div>
             {emptyState ? (
@@ -778,7 +771,7 @@ export default function CustomerPage() {
                 {emptyState}
               </div>
             ) : null}
-            {customers.map((customer) => {
+            {filteredCustomers.map((customer) => {
               const display = customer.companyName.trim() || "(ไม่ระบุชื่อ)";
               const secondary = [customer.contactName, customer.contactPhone, customer.contactEmail]
                 .filter(Boolean)

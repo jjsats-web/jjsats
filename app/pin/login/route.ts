@@ -21,9 +21,22 @@ function isSecureRequest(request: Request) {
   return isSecureProtocol && !isLocalhost(url.hostname);
 }
 
-function buildPinRedirectUrl(request: Request, error = "", redirectTo = "/customer", debug = "") {
-  const url = new URL("/pin", request.url);
-  if (redirectTo.startsWith("/") && !redirectTo.startsWith("/pin")) {
+function getRedirectBase(request: Request) {
+  const host = request.headers.get("host") || "localhost:3000";
+  const url = new URL(request.url);
+  const forwardedProto = request.headers
+    .get("x-forwarded-proto")
+    ?.split(",")[0]
+    ?.trim()
+    .toLowerCase();
+  const isSecure = url.protocol === "https:" || forwardedProto === "https";
+  return `${isSecure ? "https" : "http"}://${host}`;
+}
+
+function buildPinRedirectUrl(request: Request, error = "", redirectTo = "/quotation", debug = "") {
+  const redirectBase = getRedirectBase(request);
+  const url = new URL("/pin", redirectBase);
+  if (redirectTo && redirectTo !== "/" && redirectTo.startsWith("/") && !redirectTo.startsWith("/pin")) {
     url.searchParams.set("redirectTo", redirectTo);
   }
   if (debug === "1") {
@@ -37,13 +50,13 @@ function buildPinRedirectUrl(request: Request, error = "", redirectTo = "/custom
 
 export async function POST(request: Request) {
   let pin = "";
-  let redirectTo = "/customer";
+  let redirectTo = "/quotation";
   let debug = "";
 
   try {
     const formData = await request.formData();
     pin = String(formData.get("pin") ?? "").trim();
-    redirectTo = String(formData.get("redirectTo") ?? "/customer").trim();
+    redirectTo = String(formData.get("redirectTo") ?? "/quotation").trim();
     debug = String(formData.get("debug") ?? "").trim();
   } catch {
     return NextResponse.redirect(buildPinRedirectUrl(request, "Invalid PIN payload"), {
@@ -83,8 +96,11 @@ export async function POST(request: Request) {
 
     const role = data.role === "admin" ? "admin" : "user";
     const destination =
-      redirectTo.startsWith("/") && !redirectTo.startsWith("/pin") ? redirectTo : "/customer";
-    const response = NextResponse.redirect(new URL(destination, request.url), { status: 303 });
+      redirectTo && redirectTo !== "/" && redirectTo.startsWith("/") && !redirectTo.startsWith("/pin")
+        ? redirectTo
+        : "/quotation";
+    const redirectBase = getRedirectBase(request);
+    const response = NextResponse.redirect(new URL(destination, redirectBase), { status: 303 });
     const isSecure = isSecureRequest(request);
 
     response.cookies.set(PIN_COOKIE, pin, {

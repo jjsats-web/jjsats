@@ -1,6 +1,7 @@
 import Image from "next/image";
 import Link from "next/link";
 import { cookies } from "next/headers";
+import AppHeader from "@/components/AppHeader";
 
 import ApprovalClient from "./ApprovalClient";
 import { formatCurrencyPlain } from "@/lib/format";
@@ -8,6 +9,10 @@ import { createSupabaseServerClient } from "@/lib/supabase/server";
 import "./approve.css";
 
 const ADMIN_PINS = new Set(["000000", "111111", "222222"]);
+const headerItems = [
+  { id: "customer", href: "/customer", label: "ทะเบียนลูกค้า", icon: "group" as const },
+  { id: "logout", href: "/logout", label: "ออกจากระบบ", icon: "logout" as const },
+];
 
 type QuoteItem = {
   description: string;
@@ -133,14 +138,7 @@ export default async function ApprovePage({
   if (!quoteId) {
     return (
       <main>
-        <header className="topbar">
-          <div className="topbar__brand">JJSATs Quotation</div>
-          <nav>
-            <Link href="/">ใบเสนอราคา</Link>
-            <Link href="/customer">ทะเบียนลูกค้า</Link>
-            <Link href="/logout">ออกจากระบบ</Link>
-          </nav>
-        </header>
+        <AppHeader items={headerItems} activeHref="/" />
         <div className="container">
           <h1>ตรวจสอบใบเสนอราคา</h1>
           <p style={{ color: "#b91c1c" }}>ไม่พบเลขที่ใบเสนอราคา</p>
@@ -160,14 +158,7 @@ export default async function ApprovePage({
   if (quoteError || !quote) {
     return (
       <main>
-        <header className="topbar">
-          <div className="topbar__brand">JJSATs Quotation</div>
-          <nav>
-            <Link href="/">ใบเสนอราคา</Link>
-            <Link href="/customer">ทะเบียนลูกค้า</Link>
-            <Link href="/logout">ออกจากระบบ</Link>
-          </nav>
-        </header>
+        <AppHeader items={headerItems} activeHref="/" />
         <div className="container">
           <h1>ตรวจสอบใบเสนอราคา</h1>
           <p style={{ color: "#b91c1c" }}>ไม่พบใบเสนอราคา</p>
@@ -236,51 +227,191 @@ export default async function ApprovePage({
   const canApprove = await isAdminPin(pinCookie);
 
   return (
-    <main>
-      <header className="topbar">
-        <div className="topbar__brand">JJSATs Quotation</div>
-        <nav>
-          <Link href="/">ใบเสนอราคา</Link>
-          <Link href="/customer">ทะเบียนลูกค้า</Link>
-          <Link href="/logout">ออกจากระบบ</Link>
-        </nav>
-      </header>
+    <main className="bg-slate-50 min-h-screen pb-20 approve-page-root">
+      <AppHeader items={headerItems} activeHref="/" />
 
-      <div className="container">
-        <h1>ตรวจสอบใบเสนอราคา</h1>
-        <p style={{ color: "var(--muted)", marginTop: "-0.4rem" }}>
-          เลขที่ {quoteRow.id} | วันที่ {formatDate(quoteRow.created_at)}
-        </p>
+      <div className="approve-container">
+        {/* Title Section */}
+        <div className="approve-title-section">
+          <div className="approve-title-badge">QUOTATION APPROVAL</div>
+          <h1>ตรวจสอบและอนุมัติใบเสนอราคา</h1>
+          <p className="approve-title-sub">
+            เลขที่อ้างอิง: <span className="font-mono font-bold text-slate-800">{quoteRow.id}</span>
+          </p>
+        </div>
 
-        <ApprovalClient quoteId={quoteId} initialStatus={status} canApprove={canApprove} />
+        {/* Beautiful 2-Column Split Dashboard */}
+        <div className="approve-dashboard-grid">
+          {/* Left Column: Summary Desk */}
+          <div className="approve-summary-desk">
+            {/* Financial Highlight Block */}
+            <div className="approve-summary-card approve-card-metrics">
+              <div className="approve-card-header">
+                <span className="icon-wrapper bg-emerald-50 text-emerald-700">
+                  <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                  </svg>
+                </span>
+                <h3>ข้อมูลการเงิน / Financial Summary</h3>
+              </div>
+              <div className="approve-metrics-content">
+                <div className="metric-row">
+                  <span className="metric-label">ยอดรวมก่อนภาษี (Subtotal)</span>
+                  <span className="metric-value">฿{formatCurrencyPlain(subtotal)}</span>
+                </div>
+                {discount > 0 && (
+                  <div className="metric-row text-red-600">
+                    <span className="metric-label">ส่วนลด (Discount)</span>
+                    <span className="metric-value">-฿{formatCurrencyPlain(discount)}</span>
+                  </div>
+                )}
+                <div className="metric-row">
+                  <span className="metric-label">ภาษีมูลค่าเพิ่ม (VAT 7%)</span>
+                  <span className="metric-value">฿{formatCurrencyPlain(vat)}</span>
+                </div>
+                <div className="metric-divider"></div>
+                <div className="metric-row row-grand-total">
+                  <span className="metric-label">ยอดสุทธิครอบคลุมภาษี</span>
+                  <span className="metric-value-grand">฿{formatCurrencyPlain(grandTotal)}</span>
+                </div>
+              </div>
+            </div>
 
-        <div style={{ display: "grid", gap: "0.5rem", marginTop: "1rem" }}>
-          <div>
-            <strong>ลูกค้า:</strong> {readString(quoteRow.company_name) || "-"}
+            {/* Customer Information Block */}
+            <div className="approve-summary-card">
+              <div className="approve-card-header">
+                <span className="icon-wrapper bg-red-50 text-red-800">
+                  <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" />
+                  </svg>
+                </span>
+                <h3>ข้อมูลลูกค้า / Client Directory</h3>
+              </div>
+              <div className="approve-card-body">
+                <div className="info-row">
+                  <span className="info-label">ชื่อลูกค้า / บริษัท</span>
+                  <span className="info-value">{customerName}</span>
+                </div>
+                {customerTaxId && customerTaxId !== "-" && (
+                  <div className="info-row">
+                    <span className="info-label">เลขประจำตัวผู้เสียภาษี</span>
+                    <span className="info-value font-mono">{customerTaxId}</span>
+                  </div>
+                )}
+                {attentionLine && attentionLine !== "-" && (
+                  <div className="info-row">
+                    <span className="info-label">ผู้ติดต่อ</span>
+                    <span className="info-value">{attentionLine}</span>
+                  </div>
+                )}
+                {customerAddress && customerAddress !== "-" && (
+                  <div className="info-row">
+                    <span className="info-label">ที่อยู่จัดส่ง / ที่อยู่บริษัท</span>
+                    <span className="info-value text-sm leading-relaxed">{customerAddress}</span>
+                  </div>
+                )}
+                {(customerTel !== "-" || customerEmail !== "-") && (
+                  <div className="info-contact-strip">
+                    {customerTel && customerTel !== "-" && (
+                      <span className="contact-tag">
+                        <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                          <path strokeLinecap="round" strokeLinejoin="round" d="M3 5a2 2 0 012-2h3.28a1 1 0 01.94.725l.548 2.2a1 1 0 01-.321.988l-1.305.98a10.582 10.582 0 004.872 4.872l.98-1.305a1 1 0 01.988-.321l2.2.548a1 1 0 01.725.94V19a2 2 0 01-2 2h-1C9.716 21 3 14.284 3 6V5z" />
+                        </svg>
+                        {customerTel}
+                      </span>
+                    )}
+                    {customerEmail && customerEmail !== "-" && (
+                      <span className="contact-tag">
+                        <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                          <path strokeLinecap="round" strokeLinejoin="round" d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
+                        </svg>
+                        {customerEmail}
+                      </span>
+                    )}
+                  </div>
+                )}
+              </div>
+            </div>
+
+            {/* Document Details Block */}
+            <div className="approve-summary-card">
+              <div className="approve-card-header">
+                <span className="icon-wrapper bg-red-50 text-red-800">
+                  <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                  </svg>
+                </span>
+                <h3>รายละเอียดใบสำคัญ / Document Details</h3>
+              </div>
+              <div className="approve-card-body">
+                <div className="info-row">
+                  <span className="info-label">ระบบ / โครงการ</span>
+                  <span className="info-value">{quoteRow.system_name || "-"}</span>
+                </div>
+                {approvalRow?.requested_by && (
+                  <div className="info-row">
+                    <span className="info-label">ผู้ส่งขออนุมัติ</span>
+                    <span className="info-value">{issuerName}</span>
+                  </div>
+                )}
+                <div className="info-row">
+                  <span className="info-label">วันที่ทำรายการ</span>
+                  <span className="info-value">{formatDate(quoteRow.created_at)}</span>
+                </div>
+                {noteContent && noteContent !== "-" && (
+                  <div className="info-row-full mt-2">
+                    <span className="info-label-block">หมายเหตุและเงื่อนไข</span>
+                    <span className="info-value-block bg-slate-50 border border-slate-100 rounded-lg p-3 text-xs text-slate-600 leading-relaxed font-sans">{noteContent}</span>
+                  </div>
+                )}
+              </div>
+            </div>
           </div>
-          <div>
-            <strong>ระบบ:</strong> {readString(quoteRow.system_name) || "-"}
+
+          {/* Right Column: Command Center */}
+          <div className="approve-command-desk">
+            {/* Approval Executive Panel */}
+            <div className="approve-command-card">
+              {canApprove ? (
+                <div className="approve-action-panel">
+                  <div className="approve-card-header mb-4">
+                    <span className="icon-wrapper bg-slate-50 text-slate-800">
+                      <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
+                        <path strokeLinecap="round" strokeLinejoin="round" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" />
+                      </svg>
+                    </span>
+                    <h3 className="text-slate-800 font-bold text-base">แผงควบคุมการอนุมัติ / Command Console</h3>
+                  </div>
+                  <ApprovalClient quoteId={quoteId} initialStatus={status} canApprove={canApprove} />
+                </div>
+              ) : (
+                <div className="approve-auth-reminder">
+                  <div className="auth-lock-icon">
+                    <svg className="w-10 h-10" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                      <path strokeLinecap="round" strokeLinejoin="round" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
+                    </svg>
+                  </div>
+                  <h2>ระบบควบคุมความปลอดภัย</h2>
+                  <p>
+                    เฉพาะผู้ดูแลระบบและผู้มีอำนาจลงนามเท่านั้น ที่จะสามารถตรวจสอบและอนุมัติใบเสนอราคานี้ได้ผ่านระบบเครือข่ายความปลอดภัย
+                  </p>
+                  <div className="auth-status-badge">
+                    <span className="dot animate-pulse"></span>
+                    ยังไม่ได้ยืนยันตัวตนด้วย PIN
+                  </div>
+                  <Link
+                    href={`/pin?redirectTo=/approve/${quoteId}`}
+                    className="auth-login-button"
+                  >
+                    <span>เข้าสู่ระบบด้วย PIN เพื่ออนุมัติ</span>
+                    <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
+                      <path strokeLinecap="round" strokeLinejoin="round" d="M9 5l7 7-7 7" />
+                    </svg>
+                  </Link>
+                </div>
+              )}
+            </div>
           </div>
-          {approvalRow?.requested_by ? (
-            <div>
-              <strong>ผู้ขออนุมัติ:</strong> {readOptionalString(approvalRow.requested_by) ?? "-"}
-            </div>
-          ) : null}
-          {approvalRow?.requested_at ? (
-            <div>
-              <strong>ขออนุมัติเมื่อ:</strong> {formatDate(approvalRow.requested_at)}
-            </div>
-          ) : null}
-          {approvalRow?.approved_at ? (
-            <div>
-              <strong>อนุมัติเมื่อ:</strong> {formatDate(approvalRow.approved_at)}
-            </div>
-          ) : null}
-          {approvalRow?.approved_by ? (
-            <div>
-              <strong>ผู้อนุมัติ:</strong> {readOptionalString(approvalRow.approved_by) ?? "-"}
-            </div>
-          ) : null}
         </div>
 
         <section className="quote-preview" aria-label="ใบเสนอราคา (ตัวอย่าง)">
@@ -292,6 +423,7 @@ export default async function ApprovePage({
                   alt="JJSATs Technology"
                   width={120}
                   height={60}
+                  unoptimized
                 />
               </div>
               <div className="company">

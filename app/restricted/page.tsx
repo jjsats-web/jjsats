@@ -1,4 +1,5 @@
 import Link from "next/link";
+import AppHeader from "@/components/AppHeader";
 
 type RestrictedPageProps = {
   searchParams?: { from?: string | string[] };
@@ -12,17 +13,14 @@ function normalizeFrom(value?: string | string[]) {
 
 export default function RestrictedPage({ searchParams }: RestrictedPageProps) {
   const fromPath = normalizeFrom(searchParams?.from);
+  const headerItems = [
+    { id: "customer", href: "/customer", label: "ทะเบียนลูกค้า", icon: "group" as const },
+    { id: "logout", href: "/logout", label: "ออกจากระบบ", icon: "logout" as const },
+  ];
 
   return (
     <main>
-      <header className="topbar">
-        <div className="topbar__brand">JJSATs Quotation</div>
-        <nav>
-          <Link href="/">ใบเสนอราคา</Link>
-          <Link href="/customer">ทะเบียนลูกค้า</Link>
-          <Link href="/logout">ออกจากระบบ</Link>
-        </nav>
-      </header>
+      <AppHeader items={headerItems} activeHref="/" />
 
       <div className="container">
         <h1>สิทธิ์ไม่เพียงพอ</h1>

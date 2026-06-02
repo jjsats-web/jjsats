@@ -2,6 +2,7 @@
 
 import Image from "next/image";
 import Link from "next/link";
+import AppHeader from "@/components/AppHeader";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import BottomNav from "@/components/BottomNav";
 import { type IconName } from "@/components/Icon";
@@ -56,7 +57,7 @@ export default function PinManagePage() {
   const { role, setRole } = usePinRole();
   const activeHref = "/pin/manage";
   const menuItems: MenuItem[] = [
-    { id: "quote", href: "/", label: "ใบเสนอราคา", icon: "description" },
+    { id: "quote2", href: "/quotation", label: "เสนอราคา2", icon: "description" },
     { id: "customer", href: "/customer", label: "ทะเบียนลูกค้า", icon: "group" },
     {
       id: "product",
@@ -70,13 +71,6 @@ export default function PinManagePage() {
       href: "/pin/register",
       label: "ลงทะเบียน",
       icon: "app_registration",
-      adminOnly: true,
-    },
-    {
-      id: "manage",
-      href: "/pin/manage",
-      label: "จัดการ PIN",
-      icon: "password",
       adminOnly: true,
     },
     {
@@ -250,8 +244,25 @@ export default function PinManagePage() {
   };
 
   const handleDelete = async (entry: PinEntry) => {
-    const ok = confirm("ต้องการลบ PIN นี้หรือไม่?");
-    if (!ok) return;
+    try {
+      const SwalMod = await import("sweetalert2");
+      const Swal = SwalMod.default;
+      const result = await Swal.fire({
+        title: "ต้องการลบ PIN นี้หรือไม่?",
+        text: `คุณกำลังจะลบ PIN ของคุณ ${entry.firstName} ${entry.lastName}`,
+        icon: "warning",
+        showCancelButton: true,
+        confirmButtonColor: "#ef4444",
+        cancelButtonColor: "#6b7280",
+        confirmButtonText: "ใช่, ลบเลย",
+        cancelButtonText: "ยกเลิก",
+      });
+      if (!result.isConfirmed) return;
+    } catch {
+      const ok = confirm("ต้องการลบ PIN นี้หรือไม่?");
+      if (!ok) return;
+    }
+
     setDeletingId(entry.id);
     setActionError("");
     try {
@@ -263,6 +274,20 @@ export default function PinManagePage() {
       }
       setPins((prev) => prev.filter((pin) => pin.id !== entry.id));
       if (editingId === entry.id) cancelEdit();
+
+      try {
+        const SwalMod = await import("sweetalert2");
+        const Swal = SwalMod.default;
+        await Swal.fire({
+          title: "ลบสำเร็จ!",
+          text: `ลบ PIN ของคุณ ${entry.firstName} ${entry.lastName} เรียบร้อยแล้ว`,
+          icon: "success",
+          timer: 1500,
+          showConfirmButton: false,
+        });
+      } catch {
+        // Fallback or ignore
+      }
     } catch {
       setActionError("เกิดข้อผิดพลาดในการลบ PIN");
     } finally {
@@ -277,10 +302,8 @@ export default function PinManagePage() {
   }, [loading, pins.length]);
 
   return (
-    <main className="pb-24 lg:pb-0">
-      <header className="topbar">
-        <div className="topbar__brand">JJSATs Quotation</div>
-      </header>
+    <main className="pin-manage-page pt-16 pb-24 lg:pb-0">
+      <AppHeader items={visibleMenuItems} activeHref={activeHref} />
 
       <div className="container">
         <Link href="/" prefetch={false} className="ghost-link pin-back">
