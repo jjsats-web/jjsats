@@ -203,7 +203,7 @@ function HomePageClient() {
 
   const activeHref = "/";
   const menuItems: MenuItem[] = [
-    { id: "quote2", href: "/quotation", label: "เสนอราคา2", icon: "description" },
+    { id: "quote2", href: "/quotation", label: "ใบเสนอราคา", icon: "description" },
     { id: "customer", href: "/customer", label: "ทะเบียนลูกค้า", icon: "group", adminOnly: true },
     {
       id: "product",
@@ -681,8 +681,6 @@ function HomePageClient() {
       .filter(Boolean)
       .join(" ");
     const customerTaxId = customerInfo?.taxId ? customerInfo.taxId : "-";
-    const customerTel = customerInfo?.contactPhone ? customerInfo.contactPhone : "-";
-    const customerEmail = customerInfo?.contactEmail ? customerInfo.contactEmail : "-";
     const subjectLine = quote.systemName
       ? `ใบเสนอราคา ${quote.systemName}`
       : "";
@@ -694,9 +692,6 @@ function HomePageClient() {
     const signatureImage = pinProfile.signatureImage?.startsWith("data:image/")
       ? pinProfile.signatureImage
       : "";
-    const salesSignatureLine = signatureImage
-      ? `<img class="signature-image" src="${signatureImage}" alt="ลายเซ็น" />`
-      : `<div class="signature-line"></div>`;
     const salesSignatureCaption = salesSignatureName
       ? `(${escapeHtml(salesSignatureName)})`
       : "( )";
@@ -728,15 +723,14 @@ function HomePageClient() {
       .map((item, index) => {
         const lineTotal = Math.max(item.qty * item.price, 0);
         const { sku, description } = splitItemDescription(item.description);
-        const descriptionWithSku = sku !== "-" ? `${sku} - ${description}` : description;
         return `
           <tr>
             <td class="seq">${index + 1}</td>
-            <td>${escapeHtml(descriptionWithSku)}</td>
-            <td class="unit">-</td>
-            <td class="num">${item.qty}</td>
-            <td class="num">${formatCurrencyPlain(item.price)}</td>
-            <td class="num">${formatCurrencyPlain(lineTotal)}</td>
+            <td class="sku">${sku !== "-" ? escapeHtml(sku) : ""}</td>
+            <td class="desc">${escapeHtml(description)}</td>
+            <td class="qty">${item.qty}</td>
+            <td class="price">${formatCurrencyPlain(item.price)}</td>
+            <td class="amount">${formatCurrencyPlain(lineTotal)}</td>
           </tr>
         `;
       })
@@ -747,12 +741,12 @@ function HomePageClient() {
         <table class="items">
           <thead>
             <tr>
-              <th class="seq"><div class="th-cell">ลำดับ<br>No.</div></th>
-              <th><div class="th-cell">รายละเอียด<br>Description</div></th>
-              <th class="unit"><div class="th-cell">จำนวน<br>Unit</div></th>
-              <th class="num"><div class="th-cell">หน่วย<br>QTY</div></th>
-              <th class="num"><div class="th-cell">ราคา/หน่วย<br>Untill price</div></th>
-              <th class="num"><div class="th-cell">ราคารวม<br>Amount</div></th>
+              <th class="seq">ลำดับ</th>
+              <th class="sku">รหัสสินค้า</th>
+              <th class="desc">รายละเอียด</th>
+              <th class="qty">จำนวน</th>
+              <th class="price">ราคา</th>
+              <th class="amount">เป็นเงิน</th>
             </tr>
           </thead>
           <tbody>
@@ -770,22 +764,22 @@ function HomePageClient() {
           <title>ใบเสนอราคา</title>
           <style>
             @page { size: A4; margin: 0; }
-            * { box-sizing: border-box; }
-            body { font-family: "TH Sarabun New", "Sarabun", "Noto Sans Thai", "Segoe UI", sans-serif; color: #0b1224; margin: 0; }
+            * { box-sizing: border-box; font-weight: normal; }
+            body { font-family: "TH Sarabun New", "Sarabun", "Noto Sans Thai", "Segoe UI", sans-serif; color: #000000; margin: 0; }
             .doc {
               width: 210mm;
               margin: 0 auto;
               display: flex;
               flex-direction: column;
-              gap: 18px;
-              padding: 8mm 16mm 18mm;
+              gap: 8px;
+              padding: 8mm 14mm 10mm;
+              background: #ffffff;
             }
             .doc-header {
               display: flex;
               align-items: center;
               gap: 16px;
-              padding-bottom: 12px;
-              border-bottom: none;
+              padding-bottom: 2px;
             }
             .doc-header::after {
               content: "";
@@ -793,7 +787,7 @@ function HomePageClient() {
               flex-shrink: 0;
             }
             .logo {
-              width: 120px;
+              width: 110px;
               flex-shrink: 0;
             }
             .logo img {
@@ -804,21 +798,22 @@ function HomePageClient() {
             .company {
               flex: 1;
               text-align: center;
-              line-height: 1.5;
+              line-height: 1.35;
               padding: 0 4px;
             }
             .company-name {
-              font-weight: 700;
-              font-size: 15px;
-              margin-bottom: 4px;
+              font-size: 16px;
+              font-weight: bold;
+              margin-bottom: 1px;
+              color: #000000;
             }
             .company-detail {
-              font-size: 15px;
-              line-height: 1.2;
-              color: #334155;
+              font-size: 12.5px;
+              line-height: 1.25;
+              color: #000000;
             }
             .company-detail--line2 {
-              font-size: 15px;
+              font-size: 12.5px;
               white-space: nowrap;
               display: inline-block;
               max-width: 100%;
@@ -828,237 +823,262 @@ function HomePageClient() {
               white-space: nowrap;
             }
             .company-detail + .company-detail {
-              margin-top: 2px;
+              margin-top: 1px;
             }
             .doc-title {
               text-align: center;
-              font-size: 23px;
-              font-weight: 700;
-              letter-spacing: 0.08em;
-              margin-top: -18px;
+              font-size: 19px;
+              font-weight: bold;
+              letter-spacing: 0.12em;
+              margin-top: -6px;
+              margin-bottom: 2px;
+              color: #000000;
             }
             .quote-box {
               display: grid;
-              grid-template-columns: 1.8fr 1fr;
-              border: 1px solid #111827;
-              font-size: 15px;
-              margin-top: -6px;
+              grid-template-columns: 1.7fr 1fr;
+              border: 1px solid #000000;
+              font-size: 13px;
             }
             .quote-box__col {
-              padding: 8px 20px 12px;
+              padding: 2px 12px 10px;
             }
             .quote-box__col + .quote-box__col {
-              border-left: 1px solid #111827;
+              border-left: 1px solid #000000;
             }
             .quote-row {
               display: grid;
-              grid-template-columns: 160px 1fr;
-              gap: 4px;
-              padding: 1px 0;
+              grid-template-columns: 130px 1fr;
+              gap: 8px;
+              padding: 2px 0;
+              margin-bottom: 0;
               align-items: start;
+              line-height: 1.38;
+            }
+            .quote-box__col--right .quote-row {
+              grid-template-columns: 100px 1fr;
             }
             .quote-label {
-              font-weight: 600;
               white-space: nowrap;
+              font-weight: bold;
+              line-height: 1.38;
+              color: #000000;
             }
             .quote-value {
-              line-height: 1.35;
+              line-height: 1.38;
+              color: #000000;
             }
             .intro {
-              margin-top: -4px;
-              margin-bottom: -4px;
-              font-size: 15px;
-              line-height: 1.4;
-            }
-            .intro + .items,
-            .intro + .empty {
-              margin-top: -6px;
+              margin-top: 2px;
+              margin-bottom: 2px;
+              font-size: 13px;
+              line-height: 1.35;
+              color: #000000;
             }
             .items {
               width: 100%;
               border-collapse: collapse;
-              margin-top: 0;
-            }
-            .quote-box + .items,
-            .quote-box + .empty {
-              margin-top: -8px;
+              border: 1px solid #000000;
             }
             .items th,
             .items td {
-              padding: 10px 8px;
-              border-bottom: 1px solid #e2e8f0;
-              font-size: 16px;
+              border-bottom: 1px solid #000000;
+              border-right: 1px solid #000000;
+              font-size: 13px;
+            }
+            .items th:last-child,
+            .items td:last-child {
+              border-right: none;
             }
             .items th {
-              background: #741010;
-              color: #fff;
-              font-weight: 700;
+              background: #f3f4f6;
+              color: #000000;
               text-align: center;
               vertical-align: middle;
-              height: 36px;
-              padding: 0 8px;
-              overflow: visible;
-              font-size: 15px;
-            }
-            .items thead th {
-              text-align: center;
-              vertical-align: middle;
-            }
-            .items thead th .th-cell {
-              display: flex;
-              align-items: center;
-              justify-content: center;
-              height: 100%;
-              line-height: 1.1;
-              transform: translateY(-6px);
-              white-space: nowrap;
-              text-align: center;
-            }
-            .items th.num {
-              text-align: center;
-            }
-            .items th.unit {
-              text-align: center;
-              width: 70px;
-            }
-            .items th.seq {
-              text-align: center;
-              width: 52px;
+              padding: 8px 6px 6px;
+              font-weight: bold;
+              height: auto;
+              line-height: 1.4;
             }
             .items td {
+              padding: 4px 6px 8px;
               text-align: left;
-              font-size: 15px;
+              vertical-align: top;
+              line-height: 1.38;
+              background: #ffffff;
             }
-            .items tbody tr:nth-child(even) td {
-              background: #fef2f2;
-            }
-            .items td.unit {
-              text-align: center;
-              white-space: nowrap;
-              font-size: 14px;
-            }
+            .items th.seq,
             .items td.seq {
               text-align: center;
-              white-space: nowrap;
+              width: 40px;
             }
-            .items td.num {
+            .items th.sku {
               text-align: center;
-              white-space: nowrap;
+              width: 110px;
+            }
+            .items td.sku {
+              text-align: left;
+              width: 110px;
+              vertical-align: top;
+            }
+            .items th.desc {
+              text-align: center;
+            }
+            .items td.desc {
+              text-align: left;
+              vertical-align: top;
+            }
+            .items th.qty,
+            .items td.qty {
+              text-align: center;
+              width: 50px;
+            }
+            .items th.price {
+              text-align: center;
+              width: 90px;
+            }
+            .items td.price {
+              text-align: right;
+              width: 90px;
+            }
+            .items th.amount {
+              text-align: center;
+              width: 100px;
+            }
+            .items td.amount {
+              text-align: right;
+              width: 100px;
             }
             .summary {
               display: flex;
               justify-content: flex-end;
-              margin-top: 0;
-            }
-            .items + .summary,
-            .empty + .summary {
+              position: relative;
+              z-index: 1;
               margin-top: -8px;
             }
             .summary table {
               border-collapse: collapse;
-              min-width: 260px;
+              width: 190px;
+              min-width: 190px;
+              margin-top: 0;
+              border: 1px solid #000000;
+              border-top: 1px solid #000000;
             }
             .summary td {
-              padding: 4px 0;
-              font-size: 16px;
+              padding: 6px 8px 8px;
+              font-size: 13px;
+              line-height: 1.4;
+              border-bottom: 1px solid #000000;
+              border-right: 1px solid #000000;
+              background: #ffffff;
+            }
+            .summary td:last-child {
+              border-right: none;
+            }
+            .summary tr:last-child td {
+              border-bottom: none;
             }
             .summary td.label {
-              color: #64748b;
+              color: #000000;
               text-align: right;
               padding-right: 12px;
+              width: 90px;
             }
             .summary td.value {
               text-align: right;
-              min-width: 110px;
+              width: 100px;
+              min-width: 100px;
             }
-            .summary .grand {
-              font-weight: 700;
-              color: #7a1717;
-              position: relative;
-              padding-top: 4px;
-            }
-            .summary .grand::before {
-              content: "";
-              position: absolute;
-              top: 2px;
-              left: 0;
-              right: 0;
-              border-top: 2px solid #7a1717;
+            .summary td.label.grand,
+            .summary td.value.grand {
+              font-weight: bold;
             }
             .note {
-              margin-top: 10px;
-              font-size: 15px;
+              margin-top: 6px;
+              font-size: 12.5px;
+              border: none;
+              padding: 0;
             }
             .note-title {
-              font-weight: 700;
-              margin-bottom: 4px;
+              margin-bottom: 2px;
+              font-weight: bold;
+              color: #000000;
             }
             .note-body {
               white-space: pre-line;
-              color: #0f172a;
+              color: #000000;
+              line-height: 1.25;
             }
             .signatures {
-              display: flex;
-              justify-content: space-between;
-              margin-top: 26px;
-              gap: 20px;
+              display: grid;
+              grid-template-columns: 1fr 1fr;
+              border: 1px solid #000000;
+              margin-top: auto;
+              min-height: 100px;
               break-inside: avoid;
               page-break-inside: avoid;
             }
-            .signature {
-              flex: 1;
-              text-align: center;
-              font-size: 15px;
-              color: #64748b;
-            }
-            .signature--approval {
-              color: #1f2937;
-            }
-            .signature-approval-title {
-              font-weight: 600;
-              margin-bottom: 8px;
-            }
-            .signature-approval-line {
+            .signature-box {
               display: flex;
+              flex-direction: column;
               align-items: center;
               justify-content: center;
-              gap: 6px;
-              margin-bottom: 6px;
+              padding: 10px 14px;
+              text-align: center;
+              font-size: 13px;
+              color: #000000;
+              box-sizing: border-box;
             }
-            .signature-approval-line .label {
-              white-space: nowrap;
-            }
-            .signature-approval-line .line {
-              border-bottom: 1px dotted #94a3b8;
-              width: 180px;
-              height: 16px;
-            }
-            .signature-approval-caption {
-              color: #64748b;
-              font-size: 14px;
-              line-height: 1.4;
-              margin: 0 auto;
-              max-width: 220px;
+            .signature-box--seller {
+              border-right: 1px solid #000000;
             }
             .signature-image {
               display: block;
-              max-width: 140px;
-              max-height: 60px;
-              margin: 0 auto 6px;
+              max-width: 150px;
+              max-height: 42px;
+              height: 42px;
+              margin-bottom: 2px;
               object-fit: contain;
             }
-            .signature-line {
-              border-bottom: 1px solid #94a3b8;
-              margin: 0 auto 6px;
-              width: 70%;
-              height: 18px;
+            .signature-line-empty {
+              height: 42px;
+              width: 150px;
+              margin-bottom: 2px;
+              border-bottom: 1px solid #000000;
             }
             .signature-name {
+              font-size: 13px;
               margin-top: 2px;
-              font-weight: 600;
-              color: #1f2937;
+              color: #000000;
             }
-            .empty { color: #94a3b8; margin-top: 8px; font-size: 16px; }
+            .signature-title {
+              font-size: 12px;
+              color: #555555;
+              margin-top: 1px;
+            }
+            .signature-approval-title {
+              font-size: 13px;
+              font-weight: bold;
+              margin-bottom: 12px;
+              color: #000000;
+            }
+            .signature-line-dots {
+              font-size: 13px;
+              color: #000000;
+              margin-bottom: 4px;
+            }
+            .signature-approval-caption {
+              font-size: 11px;
+              color: #555555;
+              line-height: 1.3;
+              max-width: 260px;
+              margin: 0 auto;
+            }
+            .empty {
+              color: #94a3b8;
+              margin-top: 8px;
+              font-size: 14px;
+            }
           </style>
         </head>
         <body>
@@ -1074,70 +1094,57 @@ function HomePageClient() {
               </div>
             </header>
 
-            <div class="doc-title">ใบเสนอราคา/Quatation</div>
+            <div class="doc-title">ใบเสนอราคา</div>
 
             <section class="quote-box">
               <div class="quote-box__col">
                 <div class="quote-row">
-                  <div class="quote-label">บริษัท/Company:</div>
+                  <div class="quote-label">ผู้ซื้อ:</div>
                   <div class="quote-value">${escapeHtml(customerName)}</div>
                 </div>
                 <div class="quote-row">
-                  <div class="quote-label">ลูกค้า/Customer:</div>
+                  <div class="quote-label">เรียน:</div>
                   <div class="quote-value">${escapeHtml(attentionLine || "-")}</div>
                 </div>
                 <div class="quote-row">
-                  <div class="quote-label">เรื่อง/Topic:</div>
+                  <div class="quote-label">เรื่อง:</div>
                   <div class="quote-value">${escapeHtml(subjectLine)}</div>
                 </div>
                 <div class="quote-row">
-                  <div class="quote-label">ที่อยู่/Address:</div>
+                  <div class="quote-label">ที่อยู่:</div>
                   <div class="quote-value">${escapeHtml(customerAddress)}</div>
                 </div>
                 <div class="quote-row">
-                  <div class="quote-label">เลขประจำตัวผู้เสียภาษี (TaxID):</div>
+                  <div class="quote-label">เลขประจำตัวผู้เสียภาษี:</div>
                   <div class="quote-value">${escapeHtml(customerTaxId)}</div>
                 </div>
-                <div class="quote-row">
-                  <div class="quote-label">โทรศัพท์/Tel:</div>
-                  <div class="quote-value">${escapeHtml(customerTel)}</div>
-                </div>
-                <div class="quote-row">
-                  <div class="quote-label">E-mail:</div>
-                  <div class="quote-value">${escapeHtml(customerEmail)}</div>
-                </div>
               </div>
-              <div class="quote-box__col">
+              <div class="quote-box__col quote-box__col--right">
                 <div class="quote-row">
-                  <div class="quote-label">เลขที่/QT No.</div>
+                  <div class="quote-label">ใบเสนอราคาเลขที่:</div>
                   <div class="quote-value">${escapeHtml(quoteRef)}</div>
                 </div>
                 <div class="quote-row">
-                  <div class="quote-label">วันที่/Issue:</div>
+                  <div class="quote-label">วันที่:</div>
                   <div class="quote-value">${escapeHtml(quoteDate)}</div>
                 </div>
                 <div class="quote-row">
-                  <div class="quote-label">พนักงานขาย/Issuer:</div>
+                  <div class="quote-label">พนักงานขาย:</div>
                   <div class="quote-value">${escapeHtml(salesName)}</div>
                 </div>
                 <div class="quote-row">
-                  <div class="quote-label">โทรศัพท์/Tel:</div>
+                  <div class="quote-label">โทรศัพท์:</div>
                   <div class="quote-value">${escapeHtml(salesPhone)}</div>
                 </div>
                 <div class="quote-row">
-                  <div class="quote-label">อีเมล/E-mail:</div>
+                  <div class="quote-label">อีเมล:</div>
                   <div class="quote-value">${escapeHtml(salesEmail)}</div>
-                </div>
-                <div class="quote-row">
-                  <div class="quote-label">ยืนยันราคา/Valid Untill:</div>
-                  <div class="quote-value">15 วัน</div>
                 </div>
               </div>
             </section>
 
             <div class="intro">
-              บริษัทฯ ขอขอบคุณที่ท่านให้ความไว้วางใจในการเลือกใช้ บริการ หรือ ผลิตภัณฑ์ ของบรืษัทฯ และมีความยินดีที่จะเสนอราคาและเงื่อนไขดังต่อไปนี้
-              
+              บริษัทฯ ขอขอบคุณที่ท่านให้ความไว้วางใจในการเลือกใช้ บริการ หรือ ผลิตภัณฑ์ ของบริษัทฯ และมีความยินดีที่จะเสนอราคาและเงื่อนไขดังต่อไปนี้
             </div>
 
             ${itemsTable}
@@ -1145,19 +1152,25 @@ function HomePageClient() {
             <div class="summary">
               <table>
                 <tr>
-                  <td class="label">ยอดรวม</td>
+                  <td class="label">รวมเป็นเงิน</td>
                   <td class="value">${formatCurrencyPlain(subtotal)}</td>
                 </tr>
+                ${
+                  discount > 0
+                    ? `
                 <tr>
-                  <td class="label">ยอดรวม</td>
+                  <td class="label">ส่วนลด</td>
                   <td class="value">${formatCurrencyPlain(discountDisplay)}</td>
                 </tr>
+                    `
+                    : ""
+                }
                 <tr>
-                  <td class="label">ภาษีมูลค่าเพิ่ม (7%)</td>
+                  <td class="label">ภาษีมูลค่าเพิ่ม 7%</td>
                   <td class="value">${formatCurrencyPlain(vat)}</td>
                 </tr>
                 <tr>
-                  <td class="label grand">ยอดรวมสุทธิ</td>
+                  <td class="label grand">ราคาสุทธิ</td>
                   <td class="value grand">${formatCurrencyPlain(grandTotal)}</td>
                 </tr>
               </table>
@@ -1169,19 +1182,22 @@ function HomePageClient() {
             </section>
 
             <div class="signatures">
-              <div class="signature">
-                ${salesSignatureLine}
+              <div class="signature-box signature-box--seller">
+                ${
+                  signatureImage
+                    ? `<img class="signature-image" src="${signatureImage}" alt="ลายเซ็น" />`
+                    : `<div class="signature-line-empty"></div>`
+                }
                 <div class="signature-name">${salesSignatureCaption}</div>
-                <div>พนักงานขาย/Issuer</div>
+                <div class="signature-title">พนักงานขาย</div>
               </div>
-              <div class="signature signature--approval">
+              <div class="signature-box signature-box--buyer">
                 <div class="signature-approval-title">พิจารณาตกลงจัดซื้อจัดจ้าง</div>
-                <div class="signature-approval-line">
-                  <span class="label">ลงชื่อ</span>
-                  <span class="line"></span>
+                <div class="signature-line-dots">
+                  ลงชื่อ ...........................................................
                 </div>
                 <div class="signature-approval-caption">
-                  ผู้มีอำนาจลงนามเพื่อยืนยันการจัดซื้อจัดจ้าง พร้อมตราประทับ (ถ้ามี)
+                  ผู้อำนาจลงนามเพื่อยืนยันการจัดซื้อจัดจ้าง พร้อมตราประทับ (ถ้ามี)
                 </div>
               </div>
             </div>
@@ -1289,13 +1305,14 @@ function HomePageClient() {
       const printableWidth = pdfWidth;
       const imgHeight = (canvas.height * printableWidth) / canvas.width;
       const pageHeight = pdfHeight;
+      const pageTolerance = 0.5;
       let heightLeft = imgHeight;
       let position = margin;
 
       pdf.addImage(imgData, "PNG", margin, position, printableWidth, imgHeight);
       heightLeft -= pageHeight;
 
-      while (heightLeft > 0) {
+      while (heightLeft > pageTolerance) {
         pdf.addPage();
         position = margin - (imgHeight - heightLeft);
         pdf.addImage(imgData, "PNG", margin, position, printableWidth, imgHeight);

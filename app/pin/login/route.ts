@@ -1,50 +1,23 @@
 import { NextResponse } from "next/server";
 
+import { setPinSession } from "@/lib/auth/session";
+import { clearPinLoginFailures, pinLoginRetryAfter, recordPinLoginFailure } from "@/lib/auth/pin-rate-limit";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
-
-const PIN_COOKIE = "pin_auth";
-const ROLE_COOKIE = "pin_role";
-const PIN_LENGTH = 6;
-
-function isLocalhost(hostname: string) {
-  return hostname === "localhost" || hostname === "127.0.0.1" || hostname === "::1";
-}
-
-function isSecureRequest(request: Request) {
-  const url = new URL(request.url);
-  const forwardedProto = request.headers
-    .get("x-forwarded-proto")
-    ?.split(",")[0]
-    ?.trim()
-    .toLowerCase();
-  const isSecureProtocol = url.protocol === "https:" || forwardedProto === "https";
-  return isSecureProtocol && !isLocalhost(url.hostname);
-}
 
 function getRedirectBase(request: Request) {
   const host = request.headers.get("host") || "localhost:3000";
   const url = new URL(request.url);
-  const forwardedProto = request.headers
-    .get("x-forwarded-proto")
-    ?.split(",")[0]
-    ?.trim()
-    .toLowerCase();
-  const isSecure = url.protocol === "https:" || forwardedProto === "https";
-  return `${isSecure ? "https" : "http"}://${host}`;
+  const forwardedProto = request.headers.get("x-forwarded-proto")?.split(",")[0]?.trim().toLowerCase();
+  return `${url.protocol === "https:" || forwardedProto === "https" ? "https" : "http"}://${host}`;
 }
 
 function buildPinRedirectUrl(request: Request, error = "", redirectTo = "/quotation", debug = "") {
-  const redirectBase = getRedirectBase(request);
-  const url = new URL("/pin", redirectBase);
+  const url = new URL("/pin", getRedirectBase(request));
   if (redirectTo && redirectTo !== "/" && redirectTo.startsWith("/") && !redirectTo.startsWith("/pin")) {
     url.searchParams.set("redirectTo", redirectTo);
   }
-  if (debug === "1") {
-    url.searchParams.set("debug", "1");
-  }
-  if (error) {
-    url.searchParams.set("error", error);
-  }
+  if (debug === "1") url.searchParams.set("debug", "1");
+  if (error) url.searchParams.set("error", error);
   return url;
 }
 
@@ -59,70 +32,47 @@ export async function POST(request: Request) {
     redirectTo = String(formData.get("redirectTo") ?? "/quotation").trim();
     debug = String(formData.get("debug") ?? "").trim();
   } catch {
-    return NextResponse.redirect(buildPinRedirectUrl(request, "Invalid PIN payload"), {
-      status: 303,
-    });
+    return NextResponse.redirect(buildPinRedirectUrl(request, "Invalid PIN payload"), { status: 303 });
   }
 
-  if (!/^\d+$/.test(pin) || pin.length !== PIN_LENGTH) {
-    return NextResponse.redirect(
-      buildPinRedirectUrl(request, `กรุณากรอก PIN ${PIN_LENGTH} หลัก`, redirectTo, debug),
-      { status: 303 },
-    );
+  if (!/^\d{6}$/.test(pin)) {
+    return NextResponse.redirect(buildPinRedirectUrl(request, "กรุณากรอก PIN 6 หลัก", redirectTo, debug), { status: 303 });
   }
 
   try {
+    const retryAfterSeconds = await pinLoginRetryAfter(request);
+    if (retryAfterSeconds > 0) {
+      return NextResponse.redirect(
+        buildPinRedirectUrl(request, `ลองใหม่ได้อีกครั้งใน ${Math.ceil(retryAfterSeconds / 60)} นาที`, redirectTo, debug),
+        { status: 303 },
+      );
+    }
+
     const supabase = createSupabaseServerClient();
-    const { data, error } = await supabase
-      .from("pins")
-      .select("role")
-      .eq("pin", pin)
-      .limit(1)
-      .maybeSingle();
-
+    const { data, error } = await supabase.rpc("verify_pin", { input_pin: pin });
+    const profile = data?.[0];
     if (error) {
-      return NextResponse.redirect(
-        buildPinRedirectUrl(request, error.message, redirectTo, debug),
-        { status: 303 },
-      );
+      return NextResponse.redirect(buildPinRedirectUrl(request, error.message, redirectTo, debug), { status: 303 });
+    }
+    if (!profile) {
+      const lockedForSeconds = await recordPinLoginFailure(request);
+      const error = lockedForSeconds > 0
+        ? `ลองใหม่ได้อีกครั้งใน ${Math.ceil(lockedForSeconds / 60)} นาที`
+        : "PIN ไม่ถูกต้อง";
+      return NextResponse.redirect(buildPinRedirectUrl(request, error, redirectTo, debug), { status: 303 });
     }
 
-    if (!data) {
-      return NextResponse.redirect(
-        buildPinRedirectUrl(request, "PIN ไม่ถูกต้อง", redirectTo, debug),
-        { status: 303 },
-      );
-    }
-
-    const role = data.role === "admin" ? "admin" : "user";
-    const destination =
-      redirectTo && redirectTo !== "/" && redirectTo.startsWith("/") && !redirectTo.startsWith("/pin")
-        ? redirectTo
-        : "/quotation";
-    const redirectBase = getRedirectBase(request);
-    const response = NextResponse.redirect(new URL(destination, redirectBase), { status: 303 });
-    const isSecure = isSecureRequest(request);
-
-    response.cookies.set(PIN_COOKIE, pin, {
-      httpOnly: true,
-      sameSite: "lax",
-      path: "/",
-      secure: isSecure,
-      maxAge: 60 * 60,
+    const destination = redirectTo && redirectTo !== "/" && redirectTo.startsWith("/") && !redirectTo.startsWith("/pin")
+      ? redirectTo
+      : "/quotation";
+    const response = NextResponse.redirect(new URL(destination, getRedirectBase(request)), { status: 303 });
+    await clearPinLoginFailures(request);
+    await setPinSession(response, request, {
+      role: profile.role === "admin" ? "admin" : "user",
+      userId: profile.id,
     });
-    response.cookies.set(ROLE_COOKIE, role, {
-      httpOnly: true,
-      sameSite: "lax",
-      path: "/",
-      secure: isSecure,
-      maxAge: 60 * 60,
-    });
-
     return response;
-  } catch (error) {
-    const message = error instanceof Error ? error.message : "เกิดข้อผิดพลาด";
-    return NextResponse.redirect(buildPinRedirectUrl(request, message, redirectTo, debug), {
-      status: 303,
-    });
+  } catch {
+    return NextResponse.redirect(buildPinRedirectUrl(request, "ไม่สามารถเข้าสู่ระบบได้", redirectTo, debug), { status: 303 });
   }
 }

@@ -57,7 +57,7 @@ export default function PinManagePage() {
   const { role, setRole } = usePinRole();
   const activeHref = "/pin/manage";
   const menuItems: MenuItem[] = [
-    { id: "quote2", href: "/quotation", label: "เสนอราคา2", icon: "description" },
+    { id: "quote2", href: "/quotation", label: "ใบเสนอราคา", icon: "description" },
     { id: "customer", href: "/customer", label: "ทะเบียนลูกค้า", icon: "group" },
     {
       id: "product",
@@ -146,7 +146,7 @@ export default function PinManagePage() {
   const startEdit = (entry: PinEntry) => {
     setEditingId(entry.id);
     setDraft({
-      pin: entry.pin ?? "",
+      pin: "",
       firstName: entry.firstName ?? "",
       lastName: entry.lastName ?? "",
       signatureImage: entry.signatureImage ?? "",
@@ -172,7 +172,7 @@ export default function PinManagePage() {
       return;
     }
 
-    if (!/^\d+$/.test(nextPin) || nextPin.length !== PIN_LENGTH) {
+    if (nextPin && (!/^\d+$/.test(nextPin) || nextPin.length !== PIN_LENGTH)) {
       setActionError(`กรุณากรอก PIN ${PIN_LENGTH} หลัก`);
       return;
     }
@@ -426,7 +426,7 @@ export default function PinManagePage() {
                     <>
                       <div className="pin-mobile-card__name">{fullName}</div>
                       <div className="pin-mobile-card__meta">
-                        PIN: {entry.pin || "-"}
+                        PIN: ••••••
                       </div>
                       <div className="pin-mobile-card__meta">
                         สร้างเมื่อ: {formatDate(entry.createdAt)}
@@ -542,7 +542,7 @@ export default function PinManagePage() {
                           <input
                             type="password"
                             inputMode="numeric"
-                            autoComplete="one-time-code"
+                            autoComplete="new-password"
                             value={draft.pin}
                             onChange={(e) =>
                               setDraft((prev) => ({
@@ -550,11 +550,11 @@ export default function PinManagePage() {
                                 pin: e.target.value.replace(/\D/g, "").slice(0, PIN_LENGTH),
                               }))
                             }
-                            placeholder="เช่น 123456"
+                            placeholder="เว้นว่างหากไม่เปลี่ยน"
                             maxLength={PIN_LENGTH}
                           />
                         ) : (
-                          entry.pin || "-"
+                          "••••••"
                         )}
                       </td>
                       <td style={{ minWidth: "140px" }}>{formatDate(entry.createdAt)}</td>

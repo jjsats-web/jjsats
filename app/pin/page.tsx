@@ -4,11 +4,11 @@ import { useSearchParams } from "next/navigation";
 import { Suspense, useEffect, useRef, useState } from "react";
 
 import Icon from "@/components/Icon";
+import "./pin.css";
 
 type PinStatus = "idle" | "correct" | "wrong";
 
 const PIN_LENGTH = 6;
-const PIN_SESSION_KEY = "pin_auth";
 
 export default function PinPage() {
   return (
@@ -38,10 +38,34 @@ function PinPageClient() {
   const formRef = useRef<HTMLFormElement | null>(null);
 
   useEffect(() => {
+    const root = document.querySelector(".pin-page");
+    const lockTargets = [document.documentElement, document.body];
+    const preventDefault = (event: Event) => event.preventDefault();
+    const preventPinTouchMove = (event: TouchEvent) => {
+      if (event.target instanceof Element && event.target.closest(".pin-page")) {
+        event.preventDefault();
+      }
+    };
+
+    lockTargets.forEach((target) => target.classList.add("pin-screen-lock"));
+    root?.addEventListener("contextmenu", preventDefault);
+    root?.addEventListener("selectstart", preventDefault);
+    root?.addEventListener("dragstart", preventDefault);
+    document.addEventListener("touchmove", preventPinTouchMove, { passive: false });
+
+    return () => {
+      lockTargets.forEach((target) => target.classList.remove("pin-screen-lock"));
+      root?.removeEventListener("contextmenu", preventDefault);
+      root?.removeEventListener("selectstart", preventDefault);
+      root?.removeEventListener("dragstart", preventDefault);
+      document.removeEventListener("touchmove", preventPinTouchMove);
+    };
+  }, []);
+
+  useEffect(() => {
     setError(errorFromQuery);
     setPending(false);
     if (!errorFromQuery) return;
-    window.sessionStorage.removeItem(PIN_SESSION_KEY);
     setStatus("wrong");
     setPin("");
     const timeout = window.setTimeout(() => setStatus("idle"), 800);
@@ -68,7 +92,6 @@ function PinPageClient() {
     setPending(true);
     setError("");
     setStatus("correct");
-    window.sessionStorage.setItem(PIN_SESSION_KEY, code);
     logDebug(`redirect ${redirectTo}`);
     formRef.current?.requestSubmit();
   };
@@ -87,15 +110,21 @@ function PinPageClient() {
     setStatus("idle");
     setPin("");
     setError("");
-    window.sessionStorage.removeItem(PIN_SESSION_KEY);
+  };
+
+  const handleDelete = () => {
+    if (pending) return;
+    setStatus("idle");
+    setPin((prev) => prev.slice(0, -1));
+    setError("");
   };
 
   const dots = Array.from({ length: PIN_LENGTH });
-  const digits = ["1", "2", "3", "4", "5", "6", "7", "8", "9", "0"];
+  const digits = ["1", "2", "3", "4", "5", "6", "7", "8", "9"];
   const filledCount = `${pin.length}/${PIN_LENGTH}`;
 
   return (
-    <main className={`pin-page ${status !== "idle" ? `pin-${status}` : ""}`}>
+    <main className={`pin-page pin-stitch-page ${status !== "idle" ? `pin-${status}` : ""}`}>
       <div className="pin-page__ambient" aria-hidden="true">
         <span />
         <span />
@@ -109,7 +138,7 @@ function PinPageClient() {
       <div className="pin-card">
         <div className="pin-card__top">
           <span className="pin-card__icon">
-            <Icon name="password" />
+            <Icon name="description" />
           </span>
           <span className="pin-card__status">{pending ? "กำลังตรวจสอบ" : filledCount}</span>
         </div>
@@ -156,13 +185,26 @@ function PinPageClient() {
           ))}
           <button
             type="button"
-            className="number number-clear"
-            onClick={handleClear}
+            className="number number-zero"
+            onClick={() => handleDigit("0")}
+            disabled={pending}
+            aria-label="เลข 0"
+          >
+            0
+          </button>
+          <button
+            type="button"
+            className="number number-delete"
+            onClick={handleDelete}
             disabled={pending}
           >
             ล้าง
           </button>
         </div>
+
+        <button type="button" className="pin-clear-button" onClick={handleClear} disabled={pending}>
+          ล้างทั้งหมด
+        </button>
       </div>
 
       {debugEnabled ? (

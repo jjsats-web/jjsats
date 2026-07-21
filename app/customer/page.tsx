@@ -1,13 +1,16 @@
 "use client";
 
 import Link from "next/link";
-import AppHeader from "@/components/AppHeader";
+import AdminPageHeading from "@/components/AdminPageHeading";
+import AdminSidebar from "@/components/AdminSidebar";
+import AdminTopBar from "@/components/AdminTopBar";
 import BottomNav from "@/components/BottomNav";
 import Icon, { type IconName } from "@/components/Icon";
 import { usePinRole } from "@/components/PinRoleProvider";
 import type { FormEvent } from "react";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import swal from "sweetalert";
+import "./customer.css";
 
 type PinProfile = { firstName: string; lastName: string; role: "admin" | "user" };
 type SwalIcon = "success" | "error" | "warning" | "info" | "question";
@@ -27,7 +30,6 @@ type Customer = {
 type CustomerDraft = Omit<Customer, "id" | "createdAt">;
 
 const API = "/api/customers";
-const PIN_SESSION_KEY = "pin_auth";
 
 const initialDraft: CustomerDraft = {
   companyName: "",
@@ -53,12 +55,6 @@ function normalizeEmail(value: string) {
 
 function isValidEmail(value: string) {
   return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value);
-}
-
-function getPinAuthHeaders() {
-  if (typeof window === "undefined") return {} as Record<string, string>;
-  const pin = window.sessionStorage.getItem(PIN_SESSION_KEY)?.trim() ?? "";
-  return pin ? { "x-pin-auth": pin } : ({} as Record<string, string>);
 }
 
 const countFormatter = new Intl.NumberFormat("th-TH");
@@ -127,7 +123,6 @@ export default function CustomerPage() {
       const res = await fetch(API, {
         cache: "no-store",
         credentials: "include",
-        headers: getPinAuthHeaders(),
       });
       const data = (await res.json()) as Customer[] | { error: string };
       if (!res.ok || !Array.isArray(data)) {
@@ -140,6 +135,16 @@ export default function CustomerPage() {
     } finally {
       setLoading(false);
     }
+  }, []);
+
+  const scrollToCustomerForm = useCallback((formId: string) => {
+    window.setTimeout(() => {
+      const form = document.getElementById(formId);
+      if (!form) return;
+      const topbarOffset = window.matchMedia("(max-width: 768px)").matches ? 76 : 92;
+      const targetTop = Math.max(0, form.getBoundingClientRect().top + window.scrollY - topbarOffset);
+      window.scrollTo({ top: targetTop, behavior: "smooth" });
+    }, 0);
   }, []);
 
   const beginEdit = useCallback((customer: Customer) => {
@@ -155,16 +160,16 @@ export default function CustomerPage() {
     });
     const isMobile = window.matchMedia("(max-width: 768px)").matches;
     const formId = isMobile ? "customerFormMobile" : "customerForm";
-    document.getElementById(formId)?.scrollIntoView({ behavior: "smooth", block: "start" });
-  }, []);
+    scrollToCustomerForm(formId);
+  }, [scrollToCustomerForm]);
 
   const cancelEdit = useCallback(() => {
     setEditingCustomerId(null);
     setDraft(initialDraft);
     const isMobile = window.matchMedia("(max-width: 768px)").matches;
     const formId = isMobile ? "customerFormMobile" : "customerForm";
-    document.getElementById(formId)?.scrollIntoView({ behavior: "smooth", block: "start" });
-  }, []);
+    scrollToCustomerForm(formId);
+  }, [scrollToCustomerForm]);
 
   useEffect(() => {
     void loadList();
@@ -173,11 +178,7 @@ export default function CustomerPage() {
   useEffect(() => {
     const loadProfile = async () => {
       try {
-        const res = await fetch("/api/pin", {
-          cache: "no-store",
-          credentials: "include",
-          headers: getPinAuthHeaders(),
-        });
+        const res = await fetch("/api/pin", { cache: "no-store" });
         const data = (await res.json()) as {
           firstName?: string;
           lastName?: string;
@@ -237,7 +238,6 @@ export default function CustomerPage() {
         credentials: "include",
         headers: {
           "Content-Type": "application/json",
-          ...getPinAuthHeaders(),
         },
         body: JSON.stringify(payload),
       });
@@ -295,7 +295,7 @@ export default function CustomerPage() {
   const customersThisMonthLabel = loading ? "-" : formatSignedCount(customersThisMonth);
   const activeHref = "/customer";
   const menuItems: MenuItem[] = [
-    { id: "quote2", href: "/quotation", label: "เสนอราคา2", icon: "description" },
+    { id: "quote2", href: "/quotation", label: "ใบเสนอราคา", icon: "description" },
     { id: "customer", href: "/customer", label: "ทะเบียนลูกค้า", icon: "group" },
     {
       id: "product",
@@ -336,26 +336,26 @@ export default function CustomerPage() {
   }, [customers, loading]);
 
   return (
-    <main className="customer-admin-page pt-16 pb-24 lg:pb-0">
-      <div className="customer-desktop">
-        <AppHeader items={visibleMenuItems} activeHref={activeHref} />
+    <main className={`customer-admin-page customer-admin-page-stitch pt-16 pb-24 lg:pb-0 ${editingCustomerId ? "is-editing" : ""}`}>
+      <div className="customer-desktop customer-stitch">
+        <AdminSidebar items={visibleMenuItems} activeHref={activeHref} />
+
+        <AdminTopBar
+          title="ทะเบียนลูกค้า"
+          subtitle="จัดการข้อมูลลูกค้า"
+          leftOffset="15rem"
+          profileName={`${pinProfile.firstName} ${pinProfile.lastName}`.trim()}
+          profileRole={role === "admin" ? "Administrator" : "User"}
+        />
 
       <div className="customer-admin-shell">
-        <div className="customer-admin-heading-wrapper flex items-center gap-3 mb-6">
-          <div className="customer-title-icon-box bg-[#741010] text-white flex items-center justify-center rounded-xl" style={{ width: "44px", height: "44px", flexShrink: 0 }}>
-            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" className="h-6 w-6">
-              <path d="M12 7V3H2v18h20V7H12zM6 19H4v-2h2v2zm0-4H4v-2h2v2zm0-4H4V9h2v2zm0-4H4V5h2v2zm6 12h-2v-2h2v2zm0-4h-2v-2h2v2zm0-4h-2V9h2v2zm0-4h-2V5h2v2zm8 12h-2v-2h2v2zm0-4h-2v-2h2v2z"/>
-            </svg>
-          </div>
-          <div className="customer-admin-heading">
-            <h1>ลงทะเบียนลูกค้า</h1>
-            {pinProfile.firstName || pinProfile.lastName ? (
-              <span className="customer-admin-kicker">
-                คุณ {`${pinProfile.firstName} ${pinProfile.lastName}`.trim()}
-              </span>
-            ) : null}
-          </div>
-        </div>
+        <AdminPageHeading
+          title="ลงทะเบียนลูกค้า"
+          icon="group"
+          meta={pinProfile.firstName || pinProfile.lastName
+            ? `คุณ ${`${pinProfile.firstName} ${pinProfile.lastName}`.trim()}`
+            : "จัดการข้อมูลลูกค้า"}
+        />
 
         <div className="customer-page-split-layout">
           {/* Main content: Form */}
@@ -632,7 +632,7 @@ export default function CustomerPage() {
         </defs>
       </svg>
       </div>
-      <div className="customer-mobile bg-background-light dark:bg-background-dark font-display antialiased text-text-primary-light dark:text-text-primary-dark h-screen overflow-hidden flex flex-col">
+      <div className="customer-mobile customer-mobile-stitch bg-background-light dark:bg-background-dark font-display antialiased text-text-primary-light dark:text-text-primary-dark h-screen overflow-hidden flex flex-col">
         <header className="flex-none bg-surface-light dark:bg-surface-dark shadow-sm z-10 sticky top-0 px-4 py-3 flex items-center justify-center border-b border-border-light dark:border-border-dark">
           <h1 className="text-lg font-bold tracking-tight text-center">
             ลงทะเบียนลูกค้า

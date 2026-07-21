@@ -1,0 +1,218 @@
+.pin-stitch-page {
+  align-items: center;
+  background: #fbf8fa;
+  color: #1b1b1d;
+  display: flex;
+  font-family: var(--font-noto-sans-thai), var(--font-manrope), sans-serif;
+  justify-content: center;
+  min-height: 100svh;
+  overflow: hidden;
+  padding: 1rem;
+  position: relative;
+}
+
+.pin-stitch-page .pin-page__ambient {
+  opacity: 0.7;
+}
+
+.pin-stitch-page .pin-page__ambient span:nth-child(1) {
+  background: #adc6ff;
+  opacity: 0.2;
+}
+
+.pin-stitch-page .pin-page__ambient span:nth-child(2) {
+  background: #bcc7de;
+  opacity: 0.2;
+}
+
+.pin-stitch-page .pin-card {
+  background: transparent;
+  border: 0;
+  border-radius: 0;
+  box-shadow: none;
+  max-width: 25rem;
+  padding: 0;
+  width: 100%;
+}
+
+.pin-stitch-page .pin-card::before,
+.pin-stitch-page .pin-card__status {
+  display: none;
+}
+
+.pin-stitch-page .pin-card__top {
+  display: block;
+  margin-bottom: 1.25rem;
+  text-align: center;
+}
+
+.pin-stitch-page .pin-card__icon {
+  align-items: center;
+  background: #091426;
+  border: 0;
+  border-radius: 1.1rem;
+  box-shadow: 0 16px 28px rgba(9, 20, 38, 0.18);
+  color: white;
+  display: inline-flex;
+  height: 4rem;
+  justify-content: center;
+  width: 4rem;
+}
+
+.pin-stitch-page .pin-card__icon svg {
+  height: 2.2rem;
+  width: 2.2rem;
+}
+
+.pin-stitch-page .pin-card__copy {
+  text-align: center;
+}
+
+.pin-stitch-page .pin-card__eyebrow {
+  color: #0058be;
+  font-family: var(--font-manrope), sans-serif;
+  font-size: 0.72rem;
+  font-weight: 700;
+  letter-spacing: 0.16em;
+  margin-bottom: 0.55rem;
+  text-transform: uppercase;
+}
+
+.pin-stitch-page .pin-card h1 {
+  color: #091426;
+  font-family: var(--font-kanit), sans-serif;
+  font-size: clamp(1.55rem, 5vw, 2rem);
+  font-weight: 600;
+  letter-spacing: -0.035em;
+  margin: 0;
+}
+
+.pin-stitch-page .pin-hint {
+  color: #45474c;
+  font-size: 0.88rem;
+  line-height: 1.65;
+  margin: 0.55rem auto 0;
+  max-width: 20rem;
+}
+
+.pin-stitch-page .pin-dots {
+  gap: 1.15rem;
+  justify-content: center;
+  margin: 2rem 0 1.1rem;
+}
+
+.pin-stitch-page .pin-dots .dot {
+  background: transparent;
+  border: 2px solid #c5c6cd;
+  height: 0.95rem;
+  transition: background 180ms ease, border-color 180ms ease, transform 180ms ease;
+  width: 0.95rem;
+}
+
+.pin-stitch-page .pin-dots .dot.active {
+  background: #0058be;
+  border-color: #0058be;
+  transform: scale(1.18);
+}
+
+.pin-stitch-page .pin-dots .dot.correct {
+  background: #00a472;
+  border-color: #00a472;
+}
+
+.pin-stitch-page .pin-dots .dot.wrong {
+  background: #ba1a1a;
+  border-color: #ba1a1a;
+}
+
+.pin-stitch-page .pin-message {
+  min-height: 2rem;
+}
+
+.pin-stitch-page .pin-pad {
+  display: grid;
+  gap: 0.55rem 1.25rem;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  margin: 0 auto;
+  max-width: 20rem;
+  padding: 0;
+}
+
+.pin-stitch-page .pin-pad .number {
+  align-items: center;
+  aspect-ratio: 1;
+  background: transparent;
+  border: 0;
+  border-radius: 999px;
+  color: #1b1b1d;
+  display: flex;
+  font-family: var(--font-manrope), sans-serif;
+  font-size: 1.85rem;
+  font-weight: 600;
+  justify-content: center;
+  min-height: 3.7rem;
+  padding: 0;
+  transition: background 150ms ease, color 150ms ease, transform 150ms ease;
+}
+
+.pin-stitch-page .pin-pad .number:hover {
+  background: #f0edef;
+  color: #0058be;
+}
+
+.pin-stitch-page .pin-pad .number:active {
+  background: #e4e2e3;
+  transform: scale(0.92);
+}
+
+.pin-stitch-page .number-delete {
+  color: #45474c !important;
+  font-size: 0 !important;
+}
+
+.pin-stitch-page .number-delete::after {
+  content: "⌫";
+  font-size: 1.7rem;
+}
+
+.pin-clear-button {
+  background: transparent;
+  border: 0;
+  color: #0058be;
+  display: block;
+  font-family: var(--font-noto-sans-thai), sans-serif;
+  font-size: 0.78rem;
+  margin: 0.7rem auto 0;
+  padding: 0.45rem 0.8rem;
+}
+
+.pin-clear-button:hover { text-decoration: underline; }
+
+.pin-stitch-page.pin-wrong .pin-card__copy,
+.pin-stitch-page.pin-wrong .pin-dots {
+  animation: pin-stitch-shake 280ms ease-in-out;
+}
+
+@keyframes pin-stitch-shake {
+  0%, 100% { transform: translateX(0); }
+  25% { transform: translateX(-8px); }
+  75% { transform: translateX(8px); }
+}
+
+@media (max-width: 420px), (max-height: 720px) {
+  .pin-stitch-page { padding: 0.75rem; }
+  .pin-stitch-page .pin-card__top { margin-bottom: 0.6rem; }
+  .pin-stitch-page .pin-card__icon { height: 3.25rem; width: 3.25rem; }
+  .pin-stitch-page .pin-card__icon svg { height: 1.8rem; width: 1.8rem; }
+  .pin-stitch-page .pin-card h1 { font-size: 1.45rem; }
+  .pin-stitch-page .pin-hint { font-size: 0.78rem; }
+  .pin-stitch-page .pin-dots { margin: 1.15rem 0 0.55rem; }
+  .pin-stitch-page .pin-pad { gap: 0.2rem 0.85rem; }
+  .pin-stitch-page .pin-pad .number { font-size: 1.55rem; min-height: 3.15rem; }
+  .pin-clear-button { margin-top: 0.25rem; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .pin-stitch-page .pin-card__copy,
+  .pin-stitch-page .pin-dots { animation: none; }
+}

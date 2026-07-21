@@ -62,7 +62,8 @@ export type Database = {
           first_name: string | null
           id: string
           last_name: string | null
-          pin: string
+          pin: string | null
+          pin_hash: string
           role: string
           signature_image: string | null
         }
@@ -71,7 +72,8 @@ export type Database = {
           first_name?: string | null
           id: string
           last_name?: string | null
-          pin: string
+          pin?: string | null
+          pin_hash?: string
           role?: string
           signature_image?: string | null
         }
@@ -80,9 +82,31 @@ export type Database = {
           first_name?: string | null
           id?: string
           last_name?: string | null
-          pin?: string
+          pin?: string | null
+          pin_hash?: string
           role?: string
           signature_image?: string | null
+        }
+        Relationships: []
+      }
+      pin_login_attempts: {
+        Row: {
+          attempt_key: string
+          failed_attempts: number
+          locked_until: string | null
+          window_started_at: string
+        }
+        Insert: {
+          attempt_key: string
+          failed_attempts?: number
+          locked_until?: string | null
+          window_started_at?: string
+        }
+        Update: {
+          attempt_key?: string
+          failed_attempts?: number
+          locked_until?: string | null
+          window_started_at?: string
         }
         Relationships: []
       }
@@ -173,32 +197,53 @@ export type Database = {
         Row: {
           company_name: string
           created_at: string
+          created_by: string | null
           customer_id: string | null
+          discount_total: number
+          grand_total: number
           id: string
           items: Json
           note: string | null
+          quote_number: string
+          subtotal: number
           system_name: string
           total: number
+          vat_rate: number
+          vat_total: number
         }
         Insert: {
           company_name: string
           created_at?: string
+          created_by?: string | null
           customer_id?: string | null
+          discount_total?: number
+          grand_total?: number
           id?: string
           items?: Json
           note?: string | null
+          quote_number?: string
+          subtotal?: number
           system_name: string
           total?: number
+          vat_rate?: number
+          vat_total?: number
         }
         Update: {
           company_name?: string
           created_at?: string
+          created_by?: string | null
           customer_id?: string | null
+          discount_total?: number
+          grand_total?: number
           id?: string
           items?: Json
           note?: string | null
+          quote_number?: string
+          subtotal?: number
           system_name?: string
           total?: number
+          vat_rate?: number
+          vat_total?: number
         }
         Relationships: []
       }
@@ -207,7 +252,58 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
-      [_ in never]: never
+      register_pin: {
+        Args: {
+          input_first_name: string
+          input_id: string
+          input_last_name: string
+          input_pin: string
+          input_role: string
+          input_signature_image?: string | null
+        }
+        Returns: string
+      }
+      update_pin: {
+        Args: {
+          input_first_name?: string | null
+          input_id: string
+          input_last_name?: string | null
+          input_pin?: string | null
+          input_signature_image?: string | null
+          replace_signature?: boolean
+        }
+        Returns: {
+          created_at: string
+          first_name: string | null
+          id: string
+          last_name: string | null
+          signature_image: string | null
+        }[]
+      }
+      verify_pin: {
+        Args: {
+          input_pin: string
+        }
+        Returns: {
+          first_name: string | null
+          id: string
+          last_name: string | null
+          role: string | null
+          signature_image: string | null
+        }[]
+      }
+      pin_login_retry_after: {
+        Args: { input_attempt_key: string }
+        Returns: number
+      }
+      record_pin_login_failure: {
+        Args: { input_attempt_key: string }
+        Returns: number
+      }
+      clear_pin_login_failures: {
+        Args: { input_attempt_key: string }
+        Returns: undefined
+      }
     }
     Enums: {
       [_ in never]: never

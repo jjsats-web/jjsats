@@ -1,55 +1,57 @@
-import { cookies, headers } from "next/headers";
+import { cookies } from "next/headers";
 import { NextResponse } from "next/server";
 
-const PIN_COOKIE = "pin_auth";
-const ROLE_COOKIE = "pin_role";
-const ADMIN_ROLE = "admin";
-const MASTER_PIN = "000000";
-const FIRST_VISIT_PIN = "first_visit";
+import { PIN_SESSION_COOKIE, type PinRole, verifyPinSessionToken } from "@/lib/auth/session";
+import { createSupabaseServerClient } from "@/lib/supabase/server";
 
 export type PinSession = {
-  pin: string;
-  role: "admin" | "user";
-  isAuthenticated: boolean;
   isAdmin: boolean;
+  isAuthenticated: boolean;
+  role: PinRole;
+  userId: string | null;
+};
+
+const anonymousSession: PinSession = {
+  isAdmin: false,
+  isAuthenticated: false,
+  role: "user",
+  userId: null,
 };
 
 export async function getPinSession(): Promise<PinSession> {
   const cookieStore = await cookies();
-  const headerStore = await headers();
-  const pinHeader = headerStore.get("x-pin-auth")?.trim() ?? "";
-  const roleHeader = headerStore.get("x-pin-role")?.trim() ?? "";
-  const pinCookie = cookieStore.get(PIN_COOKIE)?.value ?? "";
-  const roleCookie = cookieStore.get(ROLE_COOKIE)?.value ?? "";
-  const pin = pinCookie || pinHeader;
-  const roleSource = roleCookie || roleHeader;
-  const role = roleSource === ADMIN_ROLE ? "admin" : "user";
-  const isAuthenticated = Boolean(pin && pin !== "ok");
-  const isAdmin = role === "admin" || pin === MASTER_PIN || pin === FIRST_VISIT_PIN;
+  const verified = await verifyPinSessionToken(cookieStore.get(PIN_SESSION_COOKIE)?.value);
+  if (!verified) return anonymousSession;
 
-  return {
-    pin,
-    role,
-    isAuthenticated,
-    isAdmin,
-  };
+  try {
+    const supabase = createSupabaseServerClient();
+    const { data, error } = await supabase
+      .from("pins")
+      .select("id,role")
+      .eq("id", verified.sub)
+      .maybeSingle();
+
+    if (error || !data) return anonymousSession;
+    const role: PinRole = data.role === "admin" ? "admin" : "user";
+    return {
+      isAdmin: role === "admin",
+      isAuthenticated: true,
+      role,
+      userId: data.id,
+    };
+  } catch {
+    return anonymousSession;
+  }
 }
 
 export async function requirePin() {
   const session = await getPinSession();
-  if (!session.isAuthenticated) {
-    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-  }
-  return null;
+  if (session.isAuthenticated) return null;
+  return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 }
 
 export async function requireAdmin() {
   const session = await getPinSession();
-  if (!session.isAuthenticated) {
-    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-  }
-  if (!session.isAdmin) {
-    return NextResponse.json({ error: "Forbidden" }, { status: 403 });
-  }
-  return null;
+  if (session.isAdmin) return null;
+  return NextResponse.json({ error: "Forbidden" }, { status: 403 });
 }

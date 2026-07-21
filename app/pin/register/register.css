@@ -1,0 +1,361 @@
+.pin-register-page-stitch {
+  background: #f7f4f2;
+  color: #261313;
+  min-height: 100vh;
+}
+
+.pin-register-stitch-sidebar {
+  background: #2a1718;
+  bottom: 0;
+  box-shadow: 8px 0 24px rgba(42, 23, 24, 0.12);
+  color: #f4e8e5;
+  display: flex;
+  flex-direction: column;
+  left: 0;
+  padding: 1.25rem 0.8rem;
+  position: fixed;
+  top: 0;
+  width: 15rem;
+  z-index: 50;
+}
+
+.pin-register-stitch-sidebar__brand { align-items: center; display: flex; gap: 0.7rem; margin: 0 0 2.2rem 0.5rem; }
+.pin-register-stitch-sidebar__logo { align-items: center; background: #741010; border-radius: 0.65rem; color: white; display: flex; flex: 0 0 auto; height: 2.5rem; justify-content: center; width: 2.5rem; }
+.pin-register-stitch-sidebar__logo svg { height: 1.4rem; width: 1.4rem; }
+.pin-register-stitch-sidebar__brand strong,.pin-register-stitch-sidebar__brand span { display: block; }
+.pin-register-stitch-sidebar__brand strong { color: white; font-family: var(--font-kanit), sans-serif; font-size: 0.9rem; line-height: 1.2; }
+.pin-register-stitch-sidebar__brand span { color: #c9aead; font-size: 0.62rem; letter-spacing: 0.08em; margin-top: 0.2rem; text-transform: uppercase; }
+.pin-register-stitch-sidebar__nav,.pin-register-stitch-sidebar__footer { display: grid; gap: 0.35rem; }
+.pin-register-stitch-sidebar__nav a,.pin-register-stitch-sidebar__footer a { align-items: center; border-radius: 0.6rem; color: #d7c4c2; display: flex; font-family: var(--font-kanit), sans-serif; font-size: 0.86rem; gap: 0.75rem; min-height: 2.8rem; padding: 0.65rem 0.8rem; text-decoration: none; transition: background 160ms ease, color 160ms ease, transform 160ms ease; }
+.pin-register-stitch-sidebar__nav a:hover,.pin-register-stitch-sidebar__footer a:hover { background: rgba(255, 255, 255, 0.08); color: white; transform: translateX(2px); }
+.pin-register-stitch-sidebar__nav a.is-active { background: #741010; box-shadow: 0 10px 22px rgba(116, 16, 16, 0.2); color: white; }
+.pin-register-stitch-sidebar__nav svg,.pin-register-stitch-sidebar__footer svg { height: 1.2rem; width: 1.2rem; }
+.pin-register-stitch-sidebar__footer { border-top: 1px solid rgba(244, 232, 229, 0.14); margin-top: auto; padding-top: 1rem; }
+
+.pin-register-page-stitch > .pin-register-shell {
+  box-sizing: border-box;
+  margin-left: 15rem;
+  max-width: none;
+  padding: 4.75rem 2.25rem 4rem;
+  width: calc(100% - 15rem);
+}
+
+.pin-register-page-stitch .pin-register-shell { background: transparent; }
+.pin-register-page-stitch .pin-register-heading { margin: 0 auto 1.25rem; max-width: 1180px; }
+.pin-register-page-stitch .pin-register-heading h1 { color: #261313; font-family: var(--font-kanit), sans-serif; font-size: clamp(1.7rem, 3vw, 2.35rem); letter-spacing: -0.04em; }
+.pin-register-page-stitch .pin-register-card,.pin-register-page-stitch .pin-register-history { background: rgba(255, 255, 255, 0.9); border-color: #e6dedb; border-radius: 0.9rem; box-shadow: 0 12px 30px rgba(47, 26, 23, 0.05); margin-left: auto; margin-right: auto; max-width: 1180px; }
+.pin-register-page-stitch .pin-register-section--security { border-left-color: #e6dedb; }
+.pin-register-page-stitch .pin-register-history .pin-manage-heading h1 { color: #261313; font-family: var(--font-kanit), sans-serif; }
+.pin-register-page-stitch .pin-register-section input:focus,.pin-register-page-stitch .pin-register-section select:focus { border-color: #741010; box-shadow: 0 0 0 3px rgba(116, 16, 16, 0.1); }
+.pin-register-page-stitch .pin-register-submit { background: #741010; border-radius: 0.65rem; }
+.pin-register-page-stitch .pin-register-submit:hover { background: #5f0c0c; }
+
+@media (max-width: 900px) {
+  .pin-register-stitch-sidebar { width: 4.5rem; }
+  .pin-register-stitch-sidebar__brand { justify-content: center; margin-left: 0; }
+  .pin-register-stitch-sidebar__brand > div:last-child,.pin-register-stitch-sidebar__nav a span,.pin-register-stitch-sidebar__footer a span { display: none; }
+  .pin-register-stitch-sidebar__nav a,.pin-register-stitch-sidebar__footer a { justify-content: center; padding-left: 0; padding-right: 0; }
+  .pin-register-page-stitch > .pin-register-shell { margin-left: 4.5rem; padding-left: 1.25rem; padding-right: 1.25rem; width: calc(100% - 4.5rem); }
+  .pin-register-stitch .admin-topbar { --admin-topbar-left: 4.5rem; }
+}
+
+@media (max-width: 768px) {
+  .pin-register-desktop { display: none; }
+  .pin-register-page-stitch > .pin-register-shell { margin-left: 0; padding: 1.25rem 0.65rem 5rem; width: 100%; }
+  .pin-register-page-stitch .pin-register-heading { margin-bottom: 1rem; }
+  .pin-register-page-stitch .pin-register-card,.pin-register-page-stitch .pin-register-history { border-radius: 0.8rem; }
+}
+
+/* Gridgeist redesign: registration first, operational context second, history last. */
+.pin-register-page-stitch {
+  background: #f8fafc;
+  color: #1b1b1d;
+  font-family: var(--font-manrope), var(--font-noto-sans-thai), sans-serif;
+  padding-top: 0 !important;
+}
+
+.pin-register-page-stitch > .pin-register-shell {
+  max-width: none;
+}
+
+.pin-register-page-stitch .pin-register-heading,
+.pin-register-page-stitch .pin-register-history,
+.pin-register-page-stitch .pin-register-workspace {
+  max-width: 1280px;
+}
+
+.pin-register-page-stitch .pin-register-heading {
+  margin-bottom: 1.25rem;
+}
+
+.pin-register-page-stitch .pin-register-heading h1 {
+  color: #091426;
+  font-family: var(--font-kanit), sans-serif;
+  font-size: clamp(1.7rem, 3vw, 2.2rem);
+}
+
+.pin-register-page-stitch .pin-register-workspace {
+  display: grid;
+  gap: 1.25rem;
+  grid-template-columns: minmax(0, 1.7fr) minmax(220px, 0.75fr);
+  margin: 0 auto;
+}
+
+.pin-register-page-stitch .pin-register-card {
+  background: rgba(255, 255, 255, 0.86);
+  border-color: rgba(203, 213, 225, 0.8);
+  border-radius: 1rem;
+  box-shadow: 0 18px 40px rgba(15, 23, 42, 0.07);
+  margin: 0;
+  max-width: none;
+  overflow: hidden;
+  padding: 0;
+}
+
+.pin-register-page-stitch .pin-register-form-header {
+  align-items: center;
+  background: rgba(255, 255, 255, 0.55);
+  border-bottom: 1px solid #e2e8f0;
+  display: flex;
+  gap: 1rem;
+  justify-content: space-between;
+  padding: 1.25rem 1.5rem;
+}
+
+.pin-register-page-stitch .pin-register-form-header h2 {
+  color: #091426;
+  font-family: var(--font-kanit), sans-serif;
+  font-size: 1.1rem;
+  margin: 0;
+}
+
+.pin-register-page-stitch .pin-register-form-header p {
+  color: #64748b;
+  font-size: 0.8rem;
+  margin: 0.25rem 0 0;
+}
+
+.pin-register-page-stitch .pin-register-form-header__icon,
+.pin-register-page-stitch .pin-register-overview__icon {
+  align-items: center;
+  background: #fff1f2;
+  border-radius: 0.7rem;
+  color: #741010;
+  display: inline-flex;
+  flex: 0 0 auto;
+  height: 2.75rem;
+  justify-content: center;
+  width: 2.75rem;
+}
+
+.pin-register-page-stitch .pin-register-grid {
+  gap: 1.5rem;
+  padding: 1.5rem 1.5rem 0;
+}
+
+.pin-register-page-stitch .pin-register-section h2 {
+  color: #091426;
+  font-family: var(--font-kanit), sans-serif;
+  font-size: 1.05rem;
+  margin-bottom: 1.1rem;
+}
+
+.pin-register-page-stitch .pin-register-section label {
+  color: #475569;
+  font-size: 0.8rem;
+  font-weight: 600;
+  margin-bottom: 0.45rem;
+}
+
+.pin-register-page-stitch .pin-register-section input,
+.pin-register-page-stitch .pin-register-section select {
+  border-color: #cbd5e1;
+  border-radius: 0.65rem;
+  margin-bottom: 1rem;
+  min-height: 2.8rem;
+  padding: 0.65rem 0.85rem;
+}
+
+.pin-register-page-stitch .pin-register-section--security {
+  border-left-color: #e2e8f0;
+  padding-left: 1.5rem;
+}
+
+.pin-register-page-stitch .pin-register-upload {
+  background: #f8fafc;
+  border-color: #cbd5e1;
+  border-radius: 0.75rem;
+  min-height: 8.5rem;
+}
+
+.pin-register-page-stitch .pin-register-upload strong {
+  background: #091426;
+  border-radius: 0.45rem;
+  font-size: 0.78rem;
+  min-height: 2rem;
+}
+
+.pin-register-page-stitch .pin-register-error,
+.pin-register-page-stitch .pin-register-notice {
+  margin-left: 1.5rem;
+  margin-right: 1.5rem;
+}
+
+.pin-register-page-stitch .pin-register-submit {
+  margin: 1.25rem 1.5rem 1.5rem auto;
+  min-height: 2.8rem;
+  padding: 0.65rem 1.5rem;
+  width: auto;
+}
+
+.pin-register-page-stitch .pin-register-overview {
+  display: flex;
+  flex-direction: column;
+  gap: 1.25rem;
+}
+
+.pin-register-page-stitch .pin-register-overview__metric,
+.pin-register-page-stitch .pin-register-overview__help {
+  border-radius: 1rem;
+  box-shadow: 0 18px 35px rgba(15, 23, 42, 0.1);
+  padding: 1.35rem;
+}
+
+.pin-register-page-stitch .pin-register-overview__metric {
+  background: #091426;
+  color: #ffffff;
+}
+
+.pin-register-page-stitch .pin-register-overview__metric .pin-register-overview__icon {
+  background: #741010;
+  color: #ffffff;
+}
+
+.pin-register-page-stitch .pin-register-overview__metric p,
+.pin-register-page-stitch .pin-register-overview__metric span {
+  color: #d8e3fb;
+  display: block;
+}
+
+.pin-register-page-stitch .pin-register-overview__metric p {
+  font-size: 0.82rem;
+  margin: 1rem 0 0.25rem;
+}
+
+.pin-register-page-stitch .pin-register-overview__metric strong {
+  display: block;
+  font-family: var(--font-manrope), sans-serif;
+  font-size: 2.4rem;
+  line-height: 1;
+}
+
+.pin-register-page-stitch .pin-register-overview__metric span {
+  font-size: 0.75rem;
+  margin-top: 0.45rem;
+}
+
+.pin-register-page-stitch .pin-register-overview__help {
+  background: rgba(255, 255, 255, 0.86);
+  border: 1px solid rgba(203, 213, 225, 0.8);
+}
+
+.pin-register-page-stitch .pin-register-overview__help h3 {
+  color: #091426;
+  font-family: var(--font-kanit), sans-serif;
+  font-size: 1rem;
+  margin: 1rem 0 0.35rem;
+}
+
+.pin-register-page-stitch .pin-register-overview__help p {
+  color: #64748b;
+  font-size: 0.8rem;
+  line-height: 1.65;
+  margin: 0;
+}
+
+.pin-register-page-stitch .pin-register-history {
+  background: rgba(255, 255, 255, 0.86);
+  border-color: rgba(203, 213, 225, 0.8);
+  border-radius: 1rem;
+  box-shadow: 0 18px 40px rgba(15, 23, 42, 0.07);
+  margin: 1.25rem auto 0;
+  max-width: 1280px;
+}
+
+@media (max-width: 900px) {
+  .pin-register-page-stitch .pin-register-workspace {
+    grid-template-columns: 1fr;
+  }
+
+  .pin-register-page-stitch .pin-register-overview {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 640px) {
+  .pin-register-page-stitch .pin-register-form-header,
+  .pin-register-page-stitch .pin-register-grid {
+    padding-left: 1rem;
+    padding-right: 1rem;
+  }
+
+  .pin-register-page-stitch .pin-register-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .pin-register-page-stitch .pin-register-section--security {
+    border-left: 0;
+    border-top: 1px solid #e2e8f0;
+    padding-left: 0;
+    padding-top: 1.25rem;
+  }
+
+  .pin-register-page-stitch .pin-register-overview {
+    grid-template-columns: 1fr;
+  }
+
+  .pin-register-page-stitch .pin-register-submit {
+    margin-left: 1rem;
+    margin-right: 1rem;
+    width: calc(100% - 2rem);
+  }
+}
+
+/* Full-width canvas aligned with the shared TopBar. */
+.pin-register-page-stitch > .pin-register-shell {
+  margin-left: 15rem !important;
+  margin-right: 0 !important;
+  max-width: none !important;
+  padding-left: 2rem !important;
+  padding-right: 2rem !important;
+  padding-top: 4.75rem !important;
+  width: calc(100% - 15rem) !important;
+}
+
+.pin-register-page-stitch .pin-register-heading,
+.pin-register-page-stitch .pin-register-workspace,
+.pin-register-page-stitch .pin-register-history {
+  max-width: none;
+  width: 100%;
+}
+
+@media (max-width: 900px) {
+  .pin-register-page-stitch > .pin-register-shell {
+    margin-left: 4.5rem !important;
+    margin-right: 0 !important;
+    padding-left: 1.25rem !important;
+    padding-right: 1.25rem !important;
+    width: calc(100% - 4.5rem) !important;
+  }
+}
+
+@media (max-width: 768px) {
+  .pin-register-page-stitch > .pin-register-shell {
+    margin-left: 0 !important;
+    padding-left: 0.65rem !important;
+    padding-right: 0.65rem !important;
+    padding-top: 1.25rem !important;
+    width: 100% !important;
+  }
+}

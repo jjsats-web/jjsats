@@ -1,35 +1,11 @@
-import { cookies, headers } from "next/headers";
 import { NextResponse } from "next/server";
 
+import { getPinSession } from "@/lib/auth/pin";
+import { clearPinLoginFailures, pinLoginRetryAfter, recordPinLoginFailure } from "@/lib/auth/pin-rate-limit";
+import { setPinSession } from "@/lib/auth/session";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 
-const PIN_COOKIE = "pin_auth";
-const ROLE_COOKIE = "pin_role";
 const PIN_LENGTH = 6;
-const FIRST_VISIT_PIN = "first_visit";
-
-type PinRow = {
-  pin: string | null;
-  first_name: string | null;
-  last_name: string | null;
-  role: string | null;
-  signature_image: string | null;
-};
-
-function isLocalhost(hostname: string) {
-  return hostname === "localhost" || hostname === "127.0.0.1" || hostname === "::1";
-}
-
-function isSecureRequest(request: Request) {
-  const url = new URL(request.url);
-  const forwardedProto = request.headers
-    .get("x-forwarded-proto")
-    ?.split(",")[0]
-    ?.trim()
-    .toLowerCase();
-  const isSecureProtocol = url.protocol === "https:" || forwardedProto === "https";
-  return isSecureProtocol && !isLocalhost(url.hostname);
-}
 
 export async function POST(request: Request) {
   let pin = "";
@@ -40,70 +16,50 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: "Invalid JSON payload" }, { status: 400 });
   }
 
-  if (!/^\d+$/.test(pin) || pin.length !== PIN_LENGTH) {
-    return NextResponse.json(
-      { error: `กรุณากรอก PIN ${PIN_LENGTH} หลัก` },
-      { status: 400 },
-    );
+  if (!new RegExp(`^\\d{${PIN_LENGTH}}$`).test(pin)) {
+    return NextResponse.json({ error: `กรุณากรอก PIN ${PIN_LENGTH} หลัก` }, { status: 400 });
   }
 
   try {
+    const retryAfterSeconds = await pinLoginRetryAfter(request);
+    if (retryAfterSeconds > 0) {
+      return NextResponse.json(
+        { error: `ลองใหม่ได้อีกครั้งใน ${Math.ceil(retryAfterSeconds / 60)} นาที`, retryAfterSeconds },
+        { status: 429 },
+      );
+    }
+
     const supabase = createSupabaseServerClient();
-    const { data, error } = await supabase
-      .from("pins")
-      .select("pin,first_name,last_name,role")
-      .eq("pin", pin)
-      .limit(1)
-      .maybeSingle();
-
-    if (error) {
-      return NextResponse.json({ error: error.message }, { status: 500 });
+    const { data, error } = await supabase.rpc("verify_pin", { input_pin: pin });
+    const profile = data?.[0];
+    if (error) return NextResponse.json({ error: error.message }, { status: 500 });
+    if (!profile) {
+      const lockedForSeconds = await recordPinLoginFailure(request);
+      return NextResponse.json(
+        {
+          error: lockedForSeconds > 0 ? `ลองใหม่ได้อีกครั้งใน ${Math.ceil(lockedForSeconds / 60)} นาที` : "PIN ไม่ถูกต้อง",
+          retryAfterSeconds: lockedForSeconds || undefined,
+        },
+        { status: lockedForSeconds > 0 ? 429 : 401 },
+      );
     }
 
-    if (!data) {
-      return NextResponse.json({ error: "PIN ไม่ถูกต้อง" }, { status: 401 });
-    }
-
-    const role = data?.role === "admin" ? "admin" : "user";
-    const isSecure = isSecureRequest(request);
-    const response = NextResponse.json({ ok: true, role });
-    response.cookies.set(PIN_COOKIE, pin, {
-      httpOnly: true,
-      sameSite: "lax",
-      path: "/",
-      secure: isSecure,
-      maxAge: 60 * 60,
-    });
-    response.cookies.set(ROLE_COOKIE, role, {
-      httpOnly: true,
-      sameSite: "lax",
-      path: "/",
-      secure: isSecure,
-      maxAge: 60 * 60,
+    const response = NextResponse.json({ ok: true, role: profile.role === "admin" ? "admin" : "user" });
+    await clearPinLoginFailures(request);
+    await setPinSession(response, request, {
+      role: profile.role === "admin" ? "admin" : "user",
+      userId: profile.id,
     });
     return response;
-  } catch (error) {
-    const message = error instanceof Error ? error.message : "เกิดข้อผิดพลาด";
-    return NextResponse.json({ error: message }, { status: 500 });
+  } catch {
+    return NextResponse.json({ error: "ไม่สามารถตรวจสอบ PIN ได้" }, { status: 500 });
   }
 }
 
 export async function GET() {
-  const cookieStore = await cookies();
-  const headerStore = await headers();
-  const pinHeader = headerStore.get("x-pin-auth")?.trim() ?? "";
-  const roleHeader = headerStore.get("x-pin-role")?.trim() ?? "";
-  const pinCookie = cookieStore.get(PIN_COOKIE)?.value ?? "";
-  const roleCookie = cookieStore.get(ROLE_COOKIE)?.value ?? "";
-  const activePin = pinCookie || pinHeader;
-  const activeRole = roleCookie || roleHeader;
-  if (!activePin || activePin === "ok" || activePin === FIRST_VISIT_PIN) {
-    return NextResponse.json({
-      firstName: "",
-      lastName: "",
-      role: activePin === FIRST_VISIT_PIN ? "admin" : "user",
-      signatureImage: "",
-    });
+  const session = await getPinSession();
+  if (!session.isAuthenticated || !session.userId) {
+    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
   try {
@@ -111,24 +67,18 @@ export async function GET() {
     const { data, error } = await supabase
       .from("pins")
       .select("first_name,last_name,role,signature_image")
-      .eq("pin", activePin)
-      .limit(1)
+      .eq("id", session.userId)
       .maybeSingle();
+    if (error) return NextResponse.json({ error: error.message }, { status: 500 });
+    if (!data) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
-    if (error) {
-      return NextResponse.json({ error: error.message }, { status: 500 });
-    }
-
-    const record = data as PinRow | null;
-    const role = record?.role === "admin" || activeRole === "admin" ? "admin" : "user";
     return NextResponse.json({
-      firstName: record?.first_name ?? "",
-      lastName: record?.last_name ?? "",
-      role,
-      signatureImage: record?.signature_image ?? "",
+      firstName: data.first_name ?? "",
+      lastName: data.last_name ?? "",
+      role: data.role === "admin" ? "admin" : "user",
+      signatureImage: data.signature_image ?? "",
     });
-  } catch (error) {
-    const message = error instanceof Error ? error.message : "เกิดข้อผิดพลาด";
-    return NextResponse.json({ error: message }, { status: 500 });
+  } catch {
+    return NextResponse.json({ error: "ไม่สามารถโหลดข้อมูลผู้ใช้ได้" }, { status: 500 });
   }
 }

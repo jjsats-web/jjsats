@@ -1,0 +1,52 @@
+.admin-topbar {
+  --admin-topbar-left: 0px;
+  align-items: center;
+  background: rgba(255, 255, 255, 0.96);
+  border-bottom: 1px solid #e2e8f0;
+  box-sizing: border-box;
+  display: flex;
+  gap: 1.5rem;
+  height: 4.25rem;
+  left: var(--admin-topbar-left);
+  padding: 0 2rem;
+  position: fixed;
+  right: 0;
+  top: 0;
+  z-index: 40;
+}
+.admin-topbar__heading,.admin-topbar__profile-area,.admin-topbar__profile { align-items: center; display: flex; }
+.admin-topbar__heading { flex: 0 0 auto; gap: .7rem; }
+.admin-topbar__heading strong { color: #091426; font-family: var(--font-kanit), sans-serif; font-size: 1.1rem; }
+.admin-topbar__heading span { color: #cbd5e1; }
+.admin-topbar__heading small { color: #64748b; font-size: .8rem; }
+.admin-topbar__search { align-items: center; background: #f1f5f9; border-radius: .65rem; color: #64748b; display: flex; gap: .55rem; margin-right: auto; max-width: 34rem; padding: .65rem .85rem; width: 100%; }
+.admin-topbar__search svg { height: 1.1rem; width: 1.1rem; }
+.admin-topbar__search input { background: transparent; border: 0; color: #091426; min-width: 0; outline: 0; width: 100%; }
+.admin-topbar__nav { align-items: center; display: flex; gap: 1.25rem; margin-right: auto; }
+.admin-topbar__nav a { align-items: center; color: #64748b; display: flex; font-size: .82rem; gap: .35rem; text-decoration: none; white-space: nowrap; }
+.admin-topbar__nav a:hover,.admin-topbar__nav a.is-active { color: #741010; }
+.admin-topbar__nav a.is-active { font-weight: 700; }
+.admin-topbar__nav svg { height: 1.05rem; width: 1.05rem; }
+.admin-topbar__profile-area { gap: .8rem; margin-left: auto; }
+.admin-topbar__profile-area > button { background: transparent; border: 0; color: #64748b; height: 2.4rem; padding: .5rem; position: relative; width: 2.4rem; }
+.admin-topbar__profile-area > button i { background: #741010; border: 2px solid white; border-radius: 50%; height: .5rem; position: absolute; right: .2rem; top: .2rem; width: .5rem; }
+.admin-topbar__profile-area > button svg { height: 1.25rem; width: 1.25rem; }
+.admin-topbar__profile { border-left: 1px solid #e2e8f0; gap: .55rem; padding-left: .8rem; }
+.admin-topbar__profile > svg { color: #64748b; height: 2.2rem; width: 2.2rem; }
+.admin-topbar__profile span { display: grid; gap: .1rem; }
+.admin-topbar__profile b,.admin-topbar__profile small { white-space: nowrap; }
+.admin-topbar__profile b { color: #091426; font-size: .78rem; }
+.admin-topbar__profile small { color: #64748b; font-size: .65rem; }
+@media (max-width: 900px) {
+  .admin-topbar { padding-left: 1.25rem; padding-right: 1.25rem; }
+  .product-stitch .admin-topbar,.customer-stitch .admin-topbar,.quotation-stitch .admin-topbar { --admin-topbar-left: 4.5rem; }
+  .admin-topbar__heading small,.admin-topbar__heading span { display: none; }
+  .admin-topbar__nav { gap: .65rem; }
+  .admin-topbar__nav span { display: none; }
+}
+@media (max-width: 768px) {
+  .admin-topbar { gap: .65rem; height: 4rem; padding-left: .85rem; padding-right: .85rem; }
+  .admin-topbar__heading strong { font-size: .95rem; }
+  .admin-topbar__profile span { display: none; }
+  .admin-topbar__profile { border-left: 0; padding-left: 0; }
+}

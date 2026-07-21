@@ -1,12 +1,15 @@
 "use client";
 
-import AppHeader from "@/components/AppHeader";
+import AdminPageHeading from "@/components/AdminPageHeading";
+import AdminSidebar from "@/components/AdminSidebar";
+import AdminTopBar from "@/components/AdminTopBar";
 import BottomNav from "@/components/BottomNav";
 import Icon, { type IconName } from "@/components/Icon";
 import { usePinRole } from "@/components/PinRoleProvider";
 import type { FormEvent } from "react";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import swal from "sweetalert";
+import "./product.css";
 
 type Product = {
   id: string;
@@ -80,7 +83,7 @@ export default function ProductPage() {
 
   const activeHref = "/product";
   const menuItems: MenuItem[] = [
-    { id: "quote2", href: "/quotation", label: "เสนอราคา2", icon: "description" },
+    { id: "quote2", href: "/quotation", label: "ใบเสนอราคา", icon: "description" },
     { id: "customer", href: "/customer", label: "ทะเบียนลูกค้า", icon: "group" },
     {
       id: "product",
@@ -354,16 +357,42 @@ export default function ProductPage() {
   }, [loading, products.length, filteredProducts.length, searchTerm]);
 
   return (
-    <main className="product-admin-page pt-16 pb-24 lg:pb-0">
-      <AppHeader items={visibleMenuItems} activeHref={activeHref} />
+    <main className="product-admin-page product-admin-page-stitch pt-16 pb-24 lg:pb-0">
+      <div className="product-desktop product-stitch">
+        <AdminSidebar items={visibleMenuItems} activeHref={activeHref} />
+
+        <AdminTopBar
+          title="จัดการสินค้า"
+          subtitle="Product Management"
+          leftOffset="15rem"
+        />
+      </div>
 
       <div className="product-admin-shell">
-        <div className="product-admin-heading">
-          <h1>คลังสินค้าบริษัท</h1>
+        <AdminPageHeading
+          title="คลังสินค้าบริษัท"
+          icon="inventory_2"
+          meta="เพิ่มสินค้ามาตรฐานไว้ใช้ดึงเข้าหน้าใบเสนอราคาได้ทันที"
+        />
+
+        <div className="product-dashboard-stats" aria-label="สรุปข้อมูลสินค้า">
+          <div className="product-dashboard-stat">
+            <span className="product-dashboard-stat__icon"><Icon name="inventory_2" /></span>
+            <span><small>รายการทั้งหมด</small><strong>{loading ? "-" : products.length}</strong></span>
+          </div>
+          <div className="product-dashboard-stat">
+            <span className="product-dashboard-stat__icon product-dashboard-stat__icon--success"><Icon name="visibility" /></span>
+            <span><small>มีรหัสสินค้า</small><strong>{loading ? "-" : products.filter((product) => product.sku.trim()).length}</strong></span>
+          </div>
+          <div className="product-dashboard-stat">
+            <span className="product-dashboard-stat__icon product-dashboard-stat__icon--warm"><Icon name="add_box" /></span>
+            <span><small>มีราคาพร้อมใช้</small><strong>{loading ? "-" : products.filter((product) => product.userPrice > 0).length}</strong></span>
+          </div>
+          <div className="product-dashboard-stat">
+            <span className="product-dashboard-stat__icon product-dashboard-stat__icon--soft"><Icon name="description" /></span>
+            <span><small>มีรายละเอียด</small><strong>{loading ? "-" : products.filter((product) => product.description.trim()).length}</strong></span>
+          </div>
         </div>
-        <p className="product-admin-kicker" style={{ color: "#64748b", marginTop: "4px", marginBottom: "1.25rem" }}>
-          เพิ่มสินค้ามาตรฐานไว้ใช้ดึงเข้าหน้าใบเสนอราคาได้ทันที
-        </p>
 
         <form
           id="productForm"
@@ -523,7 +552,7 @@ export default function ProductPage() {
           </div>
         ) : (
           <div className="product-admin-table-wrap">
-            <table className="product-admin-table" id="productTable">
+            <table className="product-admin-table product-admin-table--legacy" id="productTable" aria-hidden="true">
               <thead>
                 <tr>
                   <th>ชื่อสินค้า</th>
@@ -583,6 +612,49 @@ export default function ProductPage() {
                           aria-label={`ลบ ${product.name}`}
                           title="ลบ"
                         >
+                          <Icon name="delete" className="h-4 w-4" />
+                        </button>
+                      </div>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+            <table className="product-admin-table product-admin-table--reference" id="productTableReference">
+              <thead>
+                <tr>
+                  <th>รหัสสินค้า</th>
+                  <th>ชื่อสินค้า</th>
+                  <th>Dealer</th>
+                  <th>Project</th>
+                  <th>User</th>
+                  <th>คงเหลือ</th>
+                  <th>จัดการ</th>
+                </tr>
+              </thead>
+              <tbody>
+                {emptyText ? (
+                  <tr>
+                    <td colSpan={7} className="product-admin-table__empty">{emptyText}</td>
+                  </tr>
+                ) : null}
+                {filteredProducts.map((product) => (
+                  <tr key={`reference-${product.id}`}>
+                    <td className="product-admin-table__sku">{product.sku || "-"}</td>
+                    <td className="product-admin-table__product">
+                      <strong>{product.name}</strong>
+                      {product.description ? <small>{product.description}</small> : null}
+                    </td>
+                    <td className="product-admin-table__price">{priceFormatter.format(Number(product.dealerPrice || 0))}</td>
+                    <td className="product-admin-table__price">{priceFormatter.format(Number(product.projectPrice || 0))}</td>
+                    <td className="product-admin-table__price product-admin-table__price--featured">{priceFormatter.format(Number(product.userPrice || 0))}</td>
+                    <td><span className="product-admin-stock">{product.unit || "-"}</span></td>
+                    <td>
+                      <div className="product-admin-row-actions">
+                        <button type="button" className="product-admin-icon-button" onClick={() => startEdit(product)} aria-label={`แก้ไข ${product.name}`} title="แก้ไข">
+                          <Icon name="edit" className="h-4 w-4" />
+                        </button>
+                        <button type="button" className="product-admin-icon-button product-admin-icon-button--danger" onClick={() => void onDelete(product.id)} disabled={saving} aria-label={`ลบ ${product.name}`} title="ลบ">
                           <Icon name="delete" className="h-4 w-4" />
                         </button>
                       </div>

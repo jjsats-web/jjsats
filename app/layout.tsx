@@ -5,9 +5,10 @@ import {
   Manrope,
   Noto_Sans_Thai,
 } from "next/font/google";
-import { cookies } from "next/headers";
 import ServiceWorkerRegister from "@/components/ServiceWorkerRegister";
 import PinRoleProvider from "@/components/PinRoleProvider";
+import NavigationTransition from "@/components/NavigationTransition";
+import { getPinSession } from "@/lib/auth/pin";
 import "./globals.css";
 
 const kanit = Kanit({
@@ -55,6 +56,12 @@ export const metadata: Metadata = {
 
 export const viewport: Viewport = {
   themeColor: "#741010",
+  width: "device-width",
+  initialScale: 1,
+  minimumScale: 1,
+  maximumScale: 1,
+  userScalable: false,
+  viewportFit: "cover",
 };
 
 export default async function RootLayout({
@@ -62,9 +69,8 @@ export default async function RootLayout({
 }: Readonly<{
   children: React.ReactNode;
 }>) {
-  const cookieStore = await cookies();
-  const roleCookie = cookieStore.get("pin_role")?.value;
-  const initialRole = roleCookie === "admin" ? "admin" : "user";
+  const session = await getPinSession();
+  const initialRole = session.role;
 
   return (
     <html lang="th">
@@ -73,6 +79,7 @@ export default async function RootLayout({
       >
         <PinRoleProvider initialRole={initialRole}>
           <ServiceWorkerRegister />
+          <NavigationTransition />
           {children}
         </PinRoleProvider>
       </body>

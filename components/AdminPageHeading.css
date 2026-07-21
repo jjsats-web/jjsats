@@ -1,0 +1,69 @@
+.admin-page-heading {
+  align-items: center;
+  display: flex;
+  gap: 0.8rem;
+  margin: 0 0 1.25rem;
+  min-height: 3rem;
+}
+
+.admin-page-heading__icon {
+  align-items: center;
+  background: #091426;
+  border-radius: 0.7rem;
+  box-shadow: 0 8px 18px rgba(9, 20, 38, 0.13);
+  color: #ffffff;
+  display: inline-flex;
+  flex: 0 0 auto;
+  height: 2.8rem;
+  justify-content: center;
+  width: 2.8rem;
+}
+
+.admin-page-heading__icon svg {
+  height: 1.35rem;
+  width: 1.35rem;
+}
+
+.admin-page-heading__content {
+  min-width: 0;
+}
+
+.admin-page-heading h1 {
+  color: #091426;
+  font-family: var(--font-kanit), var(--font-noto-sans-thai), sans-serif;
+  font-size: clamp(1.65rem, 2.7vw, 2.2rem);
+  font-weight: 600;
+  letter-spacing: -0.035em;
+  line-height: 1.12;
+  margin: 0;
+}
+
+.admin-page-heading__meta {
+  color: #64748b;
+  font-size: 0.8rem;
+  line-height: 1.4;
+  margin-top: 0.2rem;
+}
+
+@media (max-width: 768px) {
+  .admin-page-heading {
+    gap: 0.65rem;
+    margin-bottom: 1rem;
+    min-height: 2.6rem;
+  }
+
+  .admin-page-heading__icon {
+    border-radius: 0.6rem;
+    height: 2.45rem;
+    width: 2.45rem;
+  }
+
+  .admin-page-heading__icon svg {
+    height: 1.2rem;
+    width: 1.2rem;
+  }
+
+  .admin-page-heading h1 {
+    font-size: 1.55rem;
+  }
+}

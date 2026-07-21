@@ -252,30 +252,10 @@ alter table public.pins
 add column if not exists role text not null default 'user',
 add column if not exists signature_image text;
 
+-- Do not grant browser roles direct access to this table. PINs are verified only
+-- by server-side RPC functions defined in supabase/migrations.
 alter table public.pins enable row level security;
-
-drop policy if exists "pins_read_all" on public.pins;
-create policy "pins_read_all"
-on public.pins
-for select
-to anon, authenticated
-using (true);
-
-drop policy if exists "pins_upsert_all" on public.pins;
-create policy "pins_upsert_all"
-on public.pins
-for insert
-to anon, authenticated
-with check (true);
-
-create policy "pins_update_all"
-on public.pins
-for update
-to anon, authenticated
-using (true)
-with check (true);
-
-grant select, insert, update on table public.pins to anon, authenticated;
+revoke all on table public.pins from anon, authenticated;
 ```
 ## Troubleshooting
 

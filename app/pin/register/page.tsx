@@ -1,11 +1,14 @@
 "use client";
 
 import Image from "next/image";
-import AppHeader from "@/components/AppHeader";
+import AdminPageHeading from "@/components/AdminPageHeading";
+import AdminSidebar from "@/components/AdminSidebar";
+import AdminTopBar from "@/components/AdminTopBar";
 import BottomNav from "@/components/BottomNav";
 import Icon, { type IconName } from "@/components/Icon";
 import { usePinRole } from "@/components/PinRoleProvider";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import "./register.css";
 
 const PIN_LENGTH = 6;
 const MAX_SIGNATURE_SIZE = 1024 * 1024;
@@ -21,7 +24,6 @@ type MenuItem = {
 
 type PinEntry = {
   id: string;
-  pin: string;
   firstName: string;
   lastName: string;
   signatureImage: string;
@@ -45,7 +47,7 @@ function formatDate(value: string) {
 }
 
 const menuItems: MenuItem[] = [
-  { id: "quote2", href: "/quotation", label: "เสนอราคา2", icon: "description" },
+    { id: "quote2", href: "/quotation", label: "ใบเสนอราคา", icon: "description" },
   { id: "customer", href: "/customer", label: "ทะเบียนลูกค้า", icon: "group", adminOnly: true },
   {
     id: "product",
@@ -174,7 +176,7 @@ export default function PinRegisterPage() {
   const startEdit = (entry: PinEntry) => {
     setEditingId(entry.id);
     setEditDraft({
-      pin: entry.pin ?? "",
+      pin: "",
       firstName: entry.firstName ?? "",
       lastName: entry.lastName ?? "",
       signatureImage: entry.signatureImage ?? "",
@@ -233,7 +235,7 @@ export default function PinRegisterPage() {
       return;
     }
 
-    if (!/^\d+$/.test(nextPin) || nextPin.length !== PIN_LENGTH) {
+    if (nextPin && (!/^\d+$/.test(nextPin) || nextPin.length !== PIN_LENGTH)) {
       setPinActionError(`กรุณากรอก PIN ${PIN_LENGTH} หลัก`);
       return;
     }
@@ -395,7 +397,7 @@ export default function PinRegisterPage() {
     const keyword = searchTerm.trim().toLowerCase();
     if (!keyword) return pins;
     return pins.filter((entry) =>
-      [entry.firstName, entry.lastName, entry.pin, formatDate(entry.createdAt)]
+      [entry.firstName, entry.lastName, formatDate(entry.createdAt)]
         .join(" ")
         .toLowerCase()
         .includes(keyword),
@@ -410,15 +412,35 @@ export default function PinRegisterPage() {
   })();
 
   return (
-    <main className="pin-register-page pt-16 pb-24 lg:pb-0">
-      <AppHeader items={visibleMenuItems} activeHref={activeHref} />
+    <main className="pin-register-page pin-register-page-stitch pt-16 pb-24 lg:pb-0">
+      <div className="pin-register-desktop pin-register-stitch">
+        <AdminSidebar items={visibleMenuItems} activeHref={activeHref} />
+        <AdminTopBar
+          title="จัดการ PIN"
+          subtitle="Access Management"
+          leftOffset="15rem"
+          profileRole={navRole === "admin" ? "Administrator" : "User"}
+        />
+      </div>
 
       <section className="pin-register-shell">
-        <div className="pin-register-heading">
-          <h1>ตั้งค่า PIN</h1>
-        </div>
+        <AdminPageHeading
+          title="ตั้งค่า PIN"
+          icon="password"
+          meta="จัดการสิทธิ์การเข้าถึงระบบ"
+        />
 
+        <div className="pin-register-workspace">
         <form onSubmit={submit} className="pin-register-card">
+          <div className="pin-register-form-header">
+            <div>
+              <h2>ลงทะเบียนผู้ใช้งานใหม่</h2>
+              <p>ระบุข้อมูลเพื่อสร้างบัญชีผู้ใช้งานและกำหนดสิทธิ์การเข้าถึงระบบ</p>
+            </div>
+            <span className="pin-register-form-header__icon">
+              <Icon name="person_add" />
+            </span>
+          </div>
           <div className="pin-register-grid">
             <section className="pin-register-section">
               <h2>ข้อมูลส่วนตัว</h2>
@@ -524,6 +546,21 @@ export default function PinRegisterPage() {
           </button>
         </form>
 
+        <aside className="pin-register-overview" aria-label="ภาพรวมการจัดการผู้ใช้งาน">
+          <article className="pin-register-overview__metric">
+            <div className="pin-register-overview__icon"><Icon name="person_add" /></div>
+            <p>ผู้ใช้งานในระบบ</p>
+            <strong>{loadingPins ? "-" : pins.length}</strong>
+            <span>บัญชีที่ลงทะเบียนแล้ว</span>
+          </article>
+          <article className="pin-register-overview__help">
+            <div className="pin-register-overview__icon"><Icon name="password" /></div>
+            <h3>แนวทางความปลอดภัย</h3>
+            <p>ใช้ PIN 6 หลักที่คาดเดายาก และอัปโหลดลายเซ็นเพื่อใช้ยืนยันตัวตนในเอกสาร</p>
+          </article>
+        </aside>
+        </div>
+
         <section className="pin-register-history">
           <div className="pin-manage-heading">
             <div>
@@ -615,7 +652,7 @@ export default function PinRegisterPage() {
                           <input
                             type="password"
                             inputMode="numeric"
-                            autoComplete="one-time-code"
+                            autoComplete="new-password"
                             value={editDraft.pin}
                             onChange={(e) =>
                               setEditDraft((prev) => ({
@@ -623,11 +660,11 @@ export default function PinRegisterPage() {
                                 pin: e.target.value.replace(/\D/g, "").slice(0, PIN_LENGTH),
                               }))
                             }
-                            placeholder="เช่น 123456"
+                            placeholder="เว้นว่างหากไม่เปลี่ยน"
                             maxLength={PIN_LENGTH}
                           />
                         ) : (
-                          entry.pin || "-"
+                          "••••••"
                         )}
                       </td>
                       <td>{formatDate(entry.createdAt)}</td>

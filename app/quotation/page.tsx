@@ -1,13 +1,16 @@
 "use client";
 
 import Link from "next/link";
-import AppHeader from "@/components/AppHeader";
+import AdminPageHeading from "@/components/AdminPageHeading";
+import AdminSidebar from "@/components/AdminSidebar";
+import AdminTopBar from "@/components/AdminTopBar";
 import BottomNav from "@/components/BottomNav";
 import Icon, { type IconName } from "@/components/Icon";
 import { usePinRole } from "@/components/PinRoleProvider";
 import { useState, useEffect, useMemo, useRef, useCallback } from "react";
 import { formatCurrencyPlain } from "@/lib/format";
 import swal from "sweetalert";
+import "./quotation.css";
 
 type MenuItem = {
   id: string;
@@ -66,33 +69,6 @@ type SavedQuote = {
 
 const QUOTE_NOTE_STORAGE_KEY = "quotation_note";
 
-function createQuoteId() {
-  const uuid = globalThis.crypto?.randomUUID?.();
-  if (uuid) return uuid;
-
-  const bytes = new Uint8Array(16);
-  if (globalThis.crypto?.getRandomValues) {
-    globalThis.crypto.getRandomValues(bytes);
-  } else {
-    for (let i = 0; i < bytes.length; i += 1) {
-      bytes[i] = Math.floor(Math.random() * 256);
-    }
-  }
-
-  // RFC 4122 version 4 UUID fallback for environments without randomUUID().
-  bytes[6] = (bytes[6] & 0x0f) | 0x40;
-  bytes[8] = (bytes[8] & 0x3f) | 0x80;
-
-  const hex = Array.from(bytes, (byte) => byte.toString(16).padStart(2, "0"));
-  return [
-    hex.slice(0, 4).join(""),
-    hex.slice(4, 6).join(""),
-    hex.slice(6, 8).join(""),
-    hex.slice(8, 10).join(""),
-    hex.slice(10, 16).join(""),
-  ].join("-");
-}
-
 function showJjsatsSuccessAlert(title: string, text: string) {
   return swal({
     title,
@@ -114,24 +90,9 @@ function showJjsatsSuccessAlert(title: string, text: string) {
 function showJjsatsApprovalAlert() {
   return swal({
     title: "ส่งคำขออนุมัติสำเร็จ",
+    text: "ระบบได้ส่งรายละเอียดใบเสนอราคาไปยัง Telegram ของผู้บริหารเรียบร้อยแล้ว\nรอผู้บริหารตรวจสอบและอนุมัติ",
     icon: "success",
-    content: {
-      element: "div",
-      attributes: {
-        className: "swal-approval-card",
-        innerHTML: `
-          <div class="swal-approval-badge">Telegram approval request</div>
-          <p class="swal-approval-copy">
-            ระบบได้ส่งรายละเอียดใบเสนอราคาไปยัง Telegram ของผู้บริหารเรียบร้อยแล้ว
-          </p>
-          <div class="swal-approval-status">
-            <span class="swal-approval-dot"></span>
-            <span>รอผู้บริหารตรวจสอบและอนุมัติ</span>
-          </div>
-        `,
-      },
-    },
-    className: "swal-jjsats-success swal-jjsats-approval",
+    className: "swal-jjsats-approval",
     buttons: {
       confirm: {
         text: "ตกลง",
@@ -144,8 +105,16 @@ function showJjsatsApprovalAlert() {
   });
 }
 
+async function showAlertSafely(alert: Promise<unknown>) {
+  try {
+    await alert;
+  } catch (error) {
+    console.error("Failed to show alert:", error);
+  }
+}
+
 const menuItems: MenuItem[] = [
-  { id: "quote2", href: "/quotation", label: "เสนอราคา2", icon: "description" },
+  { id: "quote2", href: "/quotation", label: "ใบเสนอราคา", icon: "description" },
   { id: "customer", href: "/customer", label: "ทะเบียนลูกค้า", icon: "group", adminOnly: true },
   {
     id: "product",
@@ -221,15 +190,12 @@ export default function QuotationPage() {
   // Load History from Supabase
   const loadQuoteHistory = useCallback(async () => {
     try {
-      const pin = window.sessionStorage.getItem("pin_auth")?.trim() ?? "";
-      const headers: Record<string, string> = pin ? { "x-pin-auth": pin } : {};
-      const res = await fetch("/api/quotes", { headers, cache: "no-store" });
-      const totalCountHeader = res.headers.get("x-total-count");
+      const res = await fetch("/api/quotes", { cache: "no-store" });
       const data = await res.json();
       if (res.ok && Array.isArray(data)) {
-        const totalCount = totalCountHeader ? Number(totalCountHeader) : data.length;
         const rows = data as Array<{
           id: string;
+          quote_number?: string;
           company_name?: string;
           items?: Array<{
             description?: unknown;
@@ -237,9 +203,10 @@ export default function QuotationPage() {
             price?: unknown;
           }>;
           total?: number;
+          grand_total?: number;
           created_at?: string;
         }>;
-        const mapped = rows.map((q, index) => {
+        const mapped = rows.map((q) => {
           const dateStr = q.created_at
             ? new Date(q.created_at).toLocaleDateString("th-TH")
             : new Date().toLocaleDateString("th-TH");
@@ -251,16 +218,14 @@ export default function QuotationPage() {
               }))
             : [];
           const itemsCount = items.length;
-          const seqNum = totalCount - index + 47;
-          const customId = `QUO-2026-${String(seqNum).padStart(3, "0")}`;
           return {
             id: q.id,
-            customId,
+            customId: q.quote_number || q.id,
             date: dateStr,
             customerName: q.company_name,
             items,
             itemsCount,
-            total: Number(q.total || 0),
+            total: Number(q.grand_total ?? q.total ?? 0),
           };
         });
         setSavedQuotes(mapped);
@@ -283,10 +248,7 @@ export default function QuotationPage() {
 
     const loadApprovalStatuses = async () => {
       try {
-        const pin = window.sessionStorage.getItem("pin_auth")?.trim() ?? "";
-        const headers: Record<string, string> = pin ? { "x-pin-auth": pin } : {};
         const res = await fetch(`/api/quote-approvals?ids=${encodeURIComponent(ids.join(","))}`, {
-          headers,
           cache: "no-store",
         });
         const data = await res.json().catch(() => ({}));
@@ -325,13 +287,9 @@ export default function QuotationPage() {
     const startTime = Date.now();
 
     try {
-      const pin = window.sessionStorage.getItem("pin_auth")?.trim() ?? "";
-      const headers: Record<string, string> = { "Content-Type": "application/json" };
-      if (pin) headers["x-pin-auth"] = pin;
-
       const res = await fetch("/api/quote-approvals", {
         method: "POST",
-        headers,
+        headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ quoteId }),
       });
 
@@ -344,9 +302,18 @@ export default function QuotationPage() {
         await new Promise((resolve) => setTimeout(resolve, remainingDelay));
       }
 
-      if (res.ok && data && data.status === "pending") {
-        setApprovalStatusById((prev) => ({ ...prev, [quoteId]: "pending" }));
-        await showJjsatsApprovalAlert();
+      if (res.status === 429 && data?.retryAfterSeconds) {
+        const minutes = Math.ceil(Number(data.retryAfterSeconds) / 60);
+        await swal({
+          title: "ส่งคำขอแล้ว",
+          text: `สามารถขออนุมัติใหม่ได้อีกครั้งใน ${minutes} นาที`,
+          icon: "info",
+          buttons: { confirm: { text: "ตกลง", className: "swal-btn-jjsats", closeModal: true } },
+        });
+      } else if (res.ok && data && (data.status === "pending" || data.status === "approved")) {
+        const nextStatus = data.status === "approved" ? "approved" : "pending";
+        setApprovalStatusById((prev) => ({ ...prev, [quoteId]: nextStatus }));
+        await showAlertSafely(showJjsatsApprovalAlert());
       } else {
         await swal({
           title: "ส่งคำขออนุมัติไม่สำเร็จ",
@@ -381,6 +348,13 @@ export default function QuotationPage() {
     if (exportingId) return;
     setExportingId(quoteId);
 
+    // Open synchronously so popup blockers do not discard the completed PDF.
+    const previewWindow = window.open("", "_blank");
+    if (previewWindow) {
+      previewWindow.opener = null;
+      previewWindow.document.title = "กำลังสร้างใบเสนอราคา";
+    }
+
     const iframe = document.createElement("iframe");
     iframe.src = `/approve/${quoteId}`;
     iframe.style.position = "fixed";
@@ -390,67 +364,67 @@ export default function QuotationPage() {
     iframe.style.height = "1448px";
     document.body.appendChild(iframe);
 
+    let finished = false;
+    const cleanup = () => {
+      if (finished) return;
+      finished = true;
+      window.clearTimeout(timeoutId);
+      iframe.remove();
+      setExportingId(null);
+    };
+    const fail = () => {
+      cleanup();
+      previewWindow?.close();
+      void swal("เกิดข้อผิดพลาด", "ไม่สามารถสร้างหรือดาวน์โหลดไฟล์ PDF ได้ กรุณาลองใหม่อีกครั้ง", "error");
+    };
+    const timeoutId = window.setTimeout(fail, 15000);
+
+    iframe.onerror = fail;
     iframe.onload = () => {
-      setTimeout(async () => {
+      window.setTimeout(async () => {
         try {
           const iframeDoc = iframe.contentDocument || iframe.contentWindow?.document;
-          if (!iframeDoc) throw new Error("Could not access iframe");
-
-          const target = iframeDoc.querySelector(".quote-preview__page") as HTMLElement | null;
+          const target = iframeDoc?.querySelector(".quote-preview__page") as HTMLElement | null;
           if (!target) throw new Error("Could not find quote preview page");
 
-          const [{ default: html2canvas }, { jsPDF }] = await Promise.all([
-            import("html2canvas"),
-            import("jspdf"),
-          ]);
-
+          const [{ default: html2canvas }, { jsPDF }] = await Promise.all([import("html2canvas"), import("jspdf")]);
           const canvas = await html2canvas(target, {
             backgroundColor: "#fff",
-            scale: 3.0,
-            useCORS: true,
             logging: false,
+            scale: Math.min(window.devicePixelRatio || 1, 2),
+            useCORS: true,
           });
-
           const pdf = new jsPDF({ orientation: "p", unit: "mm", format: "a4" });
-          const imgData = canvas.toDataURL("image/png");
           const pdfWidth = pdf.internal.pageSize.getWidth();
           const pdfHeight = pdf.internal.pageSize.getHeight();
-          const margin = 0;
-          const printableWidth = pdfWidth;
-          const imgHeight = (canvas.height * printableWidth) / canvas.width;
-          const pageHeight = pdfHeight;
-          let heightLeft = imgHeight;
-          let position = margin;
+          const imageHeight = (canvas.height * pdfWidth) / canvas.width;
+          const imageData = canvas.toDataURL("image/png");
+          pdf.addImage(imageData, "PNG", 0, 0, pdfWidth, imageHeight);
 
-          pdf.addImage(imgData, "PNG", margin, position, printableWidth, imgHeight);
-          heightLeft -= pageHeight;
-
-          while (heightLeft > 0) {
+          let remainingHeight = imageHeight - pdfHeight;
+          while (remainingHeight > 1) {
             pdf.addPage();
-            position = margin - (imgHeight - heightLeft);
-            pdf.addImage(imgData, "PNG", margin, position, printableWidth, imgHeight);
-            heightLeft -= pageHeight;
+            pdf.addImage(imageData, "PNG", 0, -(imageHeight - remainingHeight), pdfWidth, imageHeight);
+            remainingHeight -= pdfHeight;
           }
 
-          const pdfBlob = pdf.output("blob");
-          const pdfUrl = URL.createObjectURL(pdfBlob);
-          
-          document.body.removeChild(iframe);
-          setExportingId(null);
-
-          const newTab = window.open(pdfUrl, "_blank");
-          if (newTab) {
-            newTab.opener = null;
+          const pdfUrl = URL.createObjectURL(pdf.output("blob"));
+          cleanup();
+          if (previewWindow && !previewWindow.closed) {
+            previewWindow.location.replace(pdfUrl);
+          } else {
+            const download = document.createElement("a");
+            download.download = `quotation-${quoteId}.pdf`;
+            download.href = pdfUrl;
+            document.body.appendChild(download);
+            download.click();
+            download.remove();
           }
-        } catch (error) {
-          try {
-            document.body.removeChild(iframe);
-          } catch {}
-          setExportingId(null);
-          console.error("PDF generation failed:", error);
-          void swal("เกิดข้อผิดพลาด", "ไม่สามารถสร้างหรือดาวน์โหลดไฟล์ PDF ได้ กรุณาลองใหม่อีกครั้ง", "error");
+          window.setTimeout(() => URL.revokeObjectURL(pdfUrl), 60000);
+        } catch {
+          fail();
         }
-      }, 800);
+      }, 500);
     };
   };
 
@@ -458,9 +432,7 @@ export default function QuotationPage() {
   useEffect(() => {
     const fetchCustomers = async () => {
       try {
-        const pin = window.sessionStorage.getItem("pin_auth")?.trim() ?? "";
-        const headers: Record<string, string> = pin ? { "x-pin-auth": pin } : {};
-        const res = await fetch("/api/customers", { headers, cache: "no-store" });
+        const res = await fetch("/api/customers", { cache: "no-store" });
         const data = await res.json();
         if (Array.isArray(data)) {
           setCustomers(data);
@@ -529,7 +501,7 @@ export default function QuotationPage() {
   }, [products, searchProduct]);
 
   const quoteTotals = useMemo(() => {
-    return quoteItems.reduce(
+    const totals = quoteItems.reduce(
       (totals, item) => {
         const lineTotal = item.qty * item.price;
         const lineDiscount = lineTotal * (item.discount / 100);
@@ -541,6 +513,8 @@ export default function QuotationPage() {
       },
       { subtotal: 0, discount: 0, total: 0 },
     );
+    const vat = totals.total * 0.07;
+    return { ...totals, grandTotal: totals.total + vat, vat };
   }, [quoteItems]);
 
   // Actions
@@ -613,11 +587,8 @@ export default function QuotationPage() {
 
     setDeletingQuoteId(quote.id);
     try {
-      const pin = window.sessionStorage.getItem("pin_auth")?.trim() ?? "";
-      const headers: Record<string, string> = pin ? { "x-pin-auth": pin } : {};
       const res = await fetch(`/api/quotes/${encodeURIComponent(quote.id)}`, {
         method: "DELETE",
-        headers,
       });
       const data = await res.json().catch(() => ({}));
 
@@ -640,26 +611,30 @@ export default function QuotationPage() {
   };
 
   return (
-    <div className="min-h-screen bg-slate-50 text-slate-900 pb-24 lg:pb-0 overflow-x-hidden quote-page">
-      <AppHeader items={visibleMenuItems} activeHref={activeHref} />
+    <div className="min-h-screen text-slate-900 pb-24 lg:pb-0 overflow-x-hidden quote-page quotation-page-stitch">
+      <div className="quotation-desktop quotation-stitch">
+        <AdminSidebar items={visibleMenuItems} activeHref={activeHref} />
+        <AdminTopBar
+          title="สร้างใบเสนอราคา"
+          subtitle="Quotation Workspace"
+          leftOffset="15rem"
+          profileRole={role === "admin" ? "Administrator" : "User"}
+        />
+      </div>
 
       <main className="pt-16 pb-24 lg:pb-0">
         <div className="quotation-page-shell">
           {/* Header Section */}
-          <div className="quotation-page-heading">
-            <h1>สร้างใบเสนอราคา</h1>
-            <div className="flex items-center gap-3 mt-2">
-              <span className="bg-blue-100 text-primary font-mono px-3 py-1 rounded text-sm font-bold">
-                QUO-2025-00045
-              </span>
-              <span className="text-slate-500 text-sm">• วันที่ 12 พ.ค. 2025</span>
-            </div>
-          </div>
+          <AdminPageHeading
+            title="สร้างใบเสนอราคา"
+            icon="description"
+            meta="แบบร่างใบเสนอราคา"
+          />
 
         {/* Form Canvas */}
-        <div className="flex flex-col gap-8">
+        <div className="quotation-form-flow flex flex-col gap-8">
           {/* Section 1: Customer */}
-          <section className="bg-white border border-slate-200 rounded-xl p-6 md:p-8 shadow-sm">
+          <section className="quotation-form-section quotation-form-section--customer bg-white border border-slate-200 rounded-xl p-6 md:p-8 shadow-sm">
             <div className="flex justify-between items-start mb-6">
               <div>
                 <h2 className="text-2xl font-semibold text-primary flex items-center gap-3">
@@ -671,6 +646,9 @@ export default function QuotationPage() {
                 <p className="text-slate-500 mt-1">เลือกจากลูกค้าที่มีอยู่ หรือเพิ่มใหม่</p>
               </div>
             </div>
+
+            <div className="quotation-customer-layout">
+            <div className="quotation-customer-main">
 
             <div className="flex flex-col sm:flex-row gap-3 mb-6">
               <div className="relative flex-1" ref={customerSearchRef}>
@@ -776,12 +754,33 @@ export default function QuotationPage() {
                 <Icon name="group" className="w-8 h-8 mx-auto mb-2 opacity-50" />
                 <p>ยังไม่ได้เลือกลูกค้า</p>
                 <p className="text-sm mt-1">กรุณาค้นหาและเลือกลูกค้าจากช่องด้านบน</p>
+               </div>
+             )}
+            </div>
+
+            <aside className="quotation-document-card" aria-label="ข้อมูลเอกสาร">
+              <div className="quotation-document-card__header">
+                <h3>ข้อมูลเอกสาร</h3>
+                <Icon name="description" />
               </div>
-            )}
+              <div className="quotation-document-card__row">
+                <span>สถานะ</span>
+                <strong>{selectedCustomer ? "พร้อมสร้างใบเสนอราคา" : "รอเลือกลูกค้า"}</strong>
+              </div>
+              <div className="quotation-document-card__row">
+                <span>ลูกค้าที่เลือก</span>
+                <strong>{selectedCustomer?.companyName || "-"}</strong>
+              </div>
+              <div className="quotation-document-card__row">
+                <span>รายการสินค้า</span>
+                <strong>{quoteItems.length} รายการ</strong>
+              </div>
+            </aside>
+            </div>
           </section>
 
           {/* Section 2: Products */}
-          <section className="bg-white border border-slate-200 rounded-xl p-6 md:p-8 shadow-sm">
+          <section className="quotation-form-section quotation-form-section--products bg-white border border-slate-200 rounded-xl p-6 md:p-8 shadow-sm">
             <div className="flex justify-between items-start mb-6">
               <div>
                 <h2 className="text-2xl font-semibold text-primary flex items-center gap-3">
@@ -1127,10 +1126,14 @@ export default function QuotationPage() {
                       <span>ส่วนลดรวม:</span>
                       <span>{formatCurrencyPlain(quoteTotals.discount)}</span>
                     </div>
+                    <div className="flex justify-between text-slate-600 text-sm">
+                      <span>ภาษีมูลค่าเพิ่ม 7%:</span>
+                      <span>{formatCurrencyPlain(quoteTotals.vat)}</span>
+                    </div>
                     <div className="flex justify-between text-slate-900 font-bold text-lg pt-2 border-t border-slate-200 mt-1">
                       <span>ยอดรวมสุทธิ:</span>
                       <span className="text-primary">
-                        ฿{formatCurrencyPlain(quoteTotals.total)}
+                        ฿{formatCurrencyPlain(quoteTotals.grandTotal)}
                       </span>
                     </div>
                   </div>
@@ -1329,7 +1332,7 @@ export default function QuotationPage() {
               <div className="pt-4 border-t border-slate-100 flex justify-between items-end">
                 <p className="font-bold text-slate-900">ยอดรวมสุทธิ</p>
                 <p className="text-2xl font-bold text-primary">
-                  ฿{formatCurrencyPlain(quoteTotals.total)}
+                  ฿{formatCurrencyPlain(quoteTotals.grandTotal)}
                 </p>
               </div>
             </div>
@@ -1348,45 +1351,29 @@ export default function QuotationPage() {
                 disabled={savingQuote}
                 onClick={() => {
                   if (savingQuote) return;
-                  const realUuid = createQuoteId();
-                  const nextSeqNum = (() => {
-                    if (savedQuotes.length > 0 && savedQuotes[0].customId) {
-                      const match = savedQuotes[0].customId.match(/(\d+)$/);
-                      if (match) {
-                        return Number(match[1]) + 1;
-                      }
-                    }
-                    return savedQuotes.length + 48;
-                  })();
-                  const nextCustomId = `QUO-2026-${String(nextSeqNum).padStart(3, "0")}`;
                   const items = quoteItems.map((item) => {
                     const skuMatch = item.detail?.match(/^SKU:\s*(.*)$/);
                     const sku = skuMatch ? skuMatch[1] : "";
                     const description = sku ? `${sku} - ${item.name}` : item.name;
                     return {
                       description,
+                      discount: item.discount,
                       qty: item.qty,
                       price: item.price,
                     };
                   });
-
-                  const pin = window.sessionStorage.getItem("pin_auth")?.trim() ?? "";
-                  const headers: Record<string, string> = { "Content-Type": "application/json" };
-                  if (pin) headers["x-pin-auth"] = pin;
 
                   void (async () => {
                     setSavingQuote(true);
                     try {
                       const res = await fetch("/api/quotes", {
                         method: "POST",
-                        headers,
+                        headers: { "Content-Type": "application/json" },
                         body: JSON.stringify({
-                          id: realUuid,
                           customerId: selectedCustomer?.id || null,
                           companyName: selectedCustomer?.companyName || "-",
                           systemName: selectedCustomer?.companyName || "-",
                           items,
-                          discount: quoteTotals.discount,
                           note: quoteNote.trim(),
                         }),
                       });
@@ -1394,21 +1381,21 @@ export default function QuotationPage() {
                       const data = await res.json().catch(() => ({}));
                       if (res.ok) {
                         const newQuote = {
-                          id: realUuid,
-                          customId: nextCustomId,
+                          id: data.id,
+                          customId: data.quoteNumber || data.id,
                           date: new Date().toLocaleDateString('th-TH'),
                           customerName: selectedCustomer?.companyName,
                           items,
                           itemsCount: quoteItems.length,
-                          total: quoteTotals.total
+                          total: Number(data.grandTotal ?? quoteTotals.grandTotal)
                         };
                          setSavedQuotes((quotes) => [newQuote, ...quotes]);
                         setShowSummaryModal(false);
 
-                        await showJjsatsSuccessAlert(
+                        await showAlertSafely(showJjsatsSuccessAlert(
                           "บันทึกสำเร็จแล้ว",
                           "ระบบบันทึกใบเสนอราคาเรียบร้อย และเพิ่มรายการไว้ในประวัติแล้ว",
-                        );
+                        ));
                         
                         // Reset form
                         setSelectedCustomer(null);

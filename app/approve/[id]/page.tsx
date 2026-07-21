@@ -1,17 +1,32 @@
 import Image from "next/image";
 import Link from "next/link";
-import { cookies } from "next/headers";
-import AppHeader from "@/components/AppHeader";
+import AdminPageHeading from "@/components/AdminPageHeading";
+import AdminSidebar from "@/components/AdminSidebar";
+import AdminTopBar from "@/components/AdminTopBar";
+import BottomNav from "@/components/BottomNav";
+import { type IconName } from "@/components/Icon";
 
 import ApprovalClient from "./ApprovalClient";
 import { formatCurrencyPlain } from "@/lib/format";
+import { getPinSession } from "@/lib/auth/pin";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import "./approve.css";
 
-const ADMIN_PINS = new Set(["000000", "111111", "222222"]);
-const headerItems = [
-  { id: "customer", href: "/customer", label: "ทะเบียนลูกค้า", icon: "group" as const },
-  { id: "logout", href: "/logout", label: "ออกจากระบบ", icon: "logout" as const },
+type MenuItem = {
+  id: string;
+  href: string;
+  label: string;
+  icon: IconName;
+  adminOnly?: boolean;
+  prefetch?: boolean;
+};
+
+const menuItems: MenuItem[] = [
+  { id: "quote", href: "/quotation", label: "ใบเสนอราคา", icon: "description" },
+  { id: "customer", href: "/customer", label: "ทะเบียนลูกค้า", icon: "group", adminOnly: true },
+  { id: "product", href: "/product", label: "สินค้าบริษัท", icon: "inventory_2", adminOnly: true },
+  { id: "register", href: "/pin/register", label: "ตั้งค่า PIN", icon: "app_registration", adminOnly: true },
+  { id: "logout", href: "/logout", label: "ออกจากระบบ", icon: "logout", prefetch: false },
 ];
 
 type QuoteItem = {
@@ -22,10 +37,6 @@ type QuoteItem = {
 
 type ApprovalStatus = "approved" | "pending" | "rejected" | "none";
 
-type PinRow = {
-  role: string | null;
-};
-
 type QuoteRow = {
   id: string;
   company_name: string | null;
@@ -33,6 +44,12 @@ type QuoteRow = {
   system_name: string | null;
   items: unknown;
   total: number | null;
+  quote_number: string | null;
+  subtotal: number | null;
+  discount_total: number | null;
+  vat_rate: number | null;
+  vat_total: number | null;
+  grand_total: number | null;
   created_at: string | null;
   note: string | null;
 };
@@ -112,22 +129,6 @@ function formatDate(value: string | null) {
   return parsed.toLocaleString("th-TH", { dateStyle: "short", timeStyle: "short" });
 }
 
-async function isAdminPin(pin: string) {
-  if (!pin || pin === "ok") return false;
-  if (ADMIN_PINS.has(pin)) return true;
-
-  const supabase = createSupabaseServerClient();
-  const { data } = await supabase
-    .from("pins")
-    .select("role")
-    .eq("pin", pin)
-    .limit(1)
-    .maybeSingle();
-
-  const record = data as PinRow | null;
-  return record?.role === "admin";
-}
-
 export default async function ApprovePage({
   params,
 }: {
@@ -137,9 +138,8 @@ export default async function ApprovePage({
   const quoteId = readString(resolvedParams.id);
   if (!quoteId) {
     return (
-      <main>
-        <AppHeader items={headerItems} activeHref="/" />
-        <div className="container">
+      <main className="approve-page-root approve-empty-state">
+        <div>
           <h1>ตรวจสอบใบเสนอราคา</h1>
           <p style={{ color: "#b91c1c" }}>ไม่พบเลขที่ใบเสนอราคา</p>
         </div>
@@ -150,16 +150,15 @@ export default async function ApprovePage({
   const supabase = createSupabaseServerClient();
   const { data: quote, error: quoteError } = await supabase
     .from("quotes")
-    .select("id,company_name,customer_id,system_name,items,total,created_at,note")
+    .select("id,quote_number,company_name,customer_id,system_name,items,total,subtotal,discount_total,vat_rate,vat_total,grand_total,created_at,note")
     .eq("id", quoteId)
     .limit(1)
     .maybeSingle();
 
   if (quoteError || !quote) {
     return (
-      <main>
-        <AppHeader items={headerItems} activeHref="/" />
-        <div className="container">
+      <main className="approve-page-root approve-empty-state">
+        <div>
           <h1>ตรวจสอบใบเสนอราคา</h1>
           <p style={{ color: "#b91c1c" }}>ไม่พบใบเสนอราคา</p>
         </div>
@@ -180,12 +179,13 @@ export default async function ApprovePage({
   }
 
   const items = normalizeItems(quoteRow.items);
-  const subtotal = items.reduce((sum, item) => sum + item.qty * item.price, 0);
-  const total = readNumber(quoteRow.total);
-  const discount = Math.max(subtotal - total, 0);
-  const discountedSubtotal = Math.max(subtotal - discount, 0);
-  const vat = discountedSubtotal * 0.07;
-  const grandTotal = discountedSubtotal + vat;
+  const calculatedSubtotal = items.reduce((sum, item) => sum + item.qty * item.price, 0);
+  const subtotal = readNumber(quoteRow.subtotal) || calculatedSubtotal;
+  const discountedSubtotal = readNumber(quoteRow.total) || subtotal;
+  const discount = readNumber(quoteRow.discount_total) || Math.max(subtotal - discountedSubtotal, 0);
+  const vatRate = readNumber(quoteRow.vat_rate) || 7;
+  const vat = readNumber(quoteRow.vat_total) || discountedSubtotal * (vatRate / 100);
+  const grandTotal = readNumber(quoteRow.grand_total) || discountedSubtotal + vat;
   const discountDisplay = discount > 0 ? -discount : 0;
 
   const { data: approval } = await supabase
@@ -203,8 +203,8 @@ export default async function ApprovePage({
       ? rawStatus
       : "none";
 
-  const quoteNumber = formatQuoteNumber(quoteRow.id);
-  const quoteRef = quoteRow.id.toUpperCase().startsWith("QT") ? quoteRow.id : quoteNumber;
+  const quoteNumber = readString(quoteRow.quote_number) || formatQuoteNumber(quoteRow.id);
+  const quoteRef = quoteNumber;
   const quoteDate = formatQuoteDate(quoteRow.created_at);
   const customerName =
     readString(customerRow?.company_name) || readString(quoteRow.company_name) || "-";
@@ -222,23 +222,53 @@ export default async function ApprovePage({
   const issuerCaption = issuerName && issuerName !== "-" ? `(${issuerName})` : "( )";
   const noteContent = readOptionalString(quoteRow.note) ?? "-";
 
-  const cookieStore = await cookies();
-  const pinCookie = cookieStore.get("pin_auth")?.value ?? "";
-  const canApprove = await isAdminPin(pinCookie);
+  let issuerSignatureImage = "";
+  if (issuerName && issuerName !== "-") {
+    try {
+      const nameParts = issuerName.split(/\s+/);
+      const firstName = nameParts[0]?.trim() || "";
+      const lastName = nameParts.slice(1).join(" ").trim() || "";
+
+      let query = supabase.from("pins").select("signature_image");
+      if (lastName) {
+        query = query.eq("first_name", firstName).eq("last_name", lastName);
+      } else {
+        query = query.eq("first_name", firstName);
+      }
+      const { data: pinData } = await query.limit(1).maybeSingle();
+      if (pinData?.signature_image) {
+        issuerSignatureImage = pinData.signature_image;
+      }
+    } catch (e) {
+      console.error("Failed to fetch signature image for", issuerName, e);
+    }
+  }
+
+  const session = await getPinSession();
+  const canApprove = session.isAdmin;
+  const visibleMenuItems = session.role === "admin"
+    ? menuItems
+    : menuItems.filter((item) => !item.adminOnly);
 
   return (
-    <main className="bg-slate-50 min-h-screen pb-20 approve-page-root">
-      <AppHeader items={headerItems} activeHref="/" />
+    <div className="min-h-screen text-slate-900 pb-24 lg:pb-0 overflow-x-hidden quote-page quotation-page-stitch approve-page-root">
+      <div className="quotation-desktop quotation-stitch">
+        <AdminSidebar items={visibleMenuItems} activeHref="/quotation" />
+        <AdminTopBar
+          title="ตรวจสอบใบเสนอราคา"
+          subtitle="Approval Workspace"
+          leftOffset="15rem"
+          profileRole={session.role === "admin" ? "Administrator" : "User"}
+        />
+      </div>
 
-      <div className="approve-container">
-        {/* Title Section */}
-        <div className="approve-title-section">
-          <div className="approve-title-badge">QUOTATION APPROVAL</div>
-          <h1>ตรวจสอบและอนุมัติใบเสนอราคา</h1>
-          <p className="approve-title-sub">
-            เลขที่อ้างอิง: <span className="font-mono font-bold text-slate-800">{quoteRow.id}</span>
-          </p>
-        </div>
+      <main className="pt-16 pb-24 lg:pb-0">
+        <div className="quotation-page-shell approve-container">
+          <AdminPageHeading
+            title="ตรวจสอบและอนุมัติใบเสนอราคา"
+            icon="description"
+            meta={<><span>เลขที่ใบเสนอราคา {quoteRef}</span><span>·</span><span>{customerName}</span></>}
+          />
 
         {/* Beautiful 2-Column Split Dashboard */}
         <div className="approve-dashboard-grid">
@@ -438,107 +468,82 @@ export default async function ApprovePage({
               </div>
             </header>
 
-            <div className="doc-title">QUOTATION</div>
+            <div className="doc-title">ใบเสนอราคา</div>
 
             <section className="quote-box">
               <div className="quote-box__col">
                 <div className="quote-row">
-                  <div className="quote-label">บริษัท/Company:</div>
+                  <div className="quote-label">ผู้ซื้อ:</div>
                   <div className="quote-value">{customerName}</div>
                 </div>
                 <div className="quote-row">
-                  <div className="quote-label">ลูกค้า/Customer:</div>
+                  <div className="quote-label">เรียน:</div>
                   <div className="quote-value">{attentionLine || "-"}</div>
                 </div>
                 <div className="quote-row">
-                  <div className="quote-label">เรื่อง/Topic:</div>
+                  <div className="quote-label">เรื่อง:</div>
                   <div className="quote-value">{subjectLine}</div>
                 </div>
                 <div className="quote-row">
-                  <div className="quote-label">ที่อยู่/Address:</div>
+                  <div className="quote-label">ที่อยู่:</div>
                   <div className="quote-value">{customerAddress}</div>
                 </div>
                 <div className="quote-row">
-                  <div className="quote-label">เลขประจำตัวผู้เสียภาษี (TaxID):</div>
+                  <div className="quote-label">เลขประจำตัวผู้เสียภาษี:</div>
                   <div className="quote-value">{customerTaxId}</div>
                 </div>
-                <div className="quote-row">
-                  <div className="quote-label">โทรศัพท์/Tel:</div>
-                  <div className="quote-value">{customerTel}</div>
-                </div>
-                <div className="quote-row">
-                  <div className="quote-label">E-mail:</div>
-                  <div className="quote-value">{customerEmail}</div>
-                </div>
               </div>
-              <div className="quote-box__col">
+              <div className="quote-box__col quote-box__col--right">
                 <div className="quote-row">
-                  <div className="quote-label">เลขที่/QT No.</div>
+                  <div className="quote-label">ใบเสนอราคาเลขที่:</div>
                   <div className="quote-value">{quoteRef}</div>
                 </div>
                 <div className="quote-row">
-                  <div className="quote-label">วันที่/Issue:</div>
+                  <div className="quote-label">วันที่:</div>
                   <div className="quote-value">{quoteDate}</div>
                 </div>
                 <div className="quote-row">
-                  <div className="quote-label">พนักงานขาย/Issuer:</div>
+                  <div className="quote-label">พนักงานขาย:</div>
                   <div className="quote-value">{issuerName}</div>
                 </div>
                 <div className="quote-row">
-                  <div className="quote-label">โทรศัพท์/Tel:</div>
+                  <div className="quote-label">โทรศัพท์:</div>
                   <div className="quote-value">0619926993</div>
                 </div>
                 <div className="quote-row">
-                  <div className="quote-label">อีเมล/E-mail:</div>
+                  <div className="quote-label">อีเมล:</div>
                   <div className="quote-value">sales@jjsat.co.th</div>
-                </div>
-                <div className="quote-row">
-                  <div className="quote-label">ยืนยันราคา/Valid Untill:</div>
-                  <div className="quote-value">15 วัน</div>
                 </div>
               </div>
             </section>
 
             <div className="intro">
-              ทางบริษัทขอเสนอราคาและรายละเอียดตามรายการดังต่อไปนี้
+              บริษัทฯ ขอขอบคุณที่ท่านให้ความไว้วางใจในการเลือกใช้ บริการ หรือ ผลิตภัณฑ์ ของบริษัทฯ และมีความยินดีที่จะเสนอราคาและเงื่อนไขดังต่อไปนี้
             </div>
 
             {items.length ? (
               <table className="items">
                 <thead>
                   <tr>
-                    <th className="seq">
-                      <div className="th-cell">ลำดับ<br />No.</div>
-                    </th>
-                    <th>
-                      <div className="th-cell">รายละเอียด<br />Description</div>
-                    </th>
-                    <th className="unit">
-                      <div className="th-cell">จำนวน<br />Unit</div>
-                    </th>
-                    <th className="num">
-                      <div className="th-cell">หน่วย<br />QTY</div>
-                    </th>
-                    <th className="num">
-                      <div className="th-cell">ราคา/หน่วย<br />Untill price</div>
-                    </th>
-                    <th className="num">
-                      <div className="th-cell">ราคารวม<br />Amount</div>
-                    </th>
+                    <th className="seq">ลำดับ</th>
+                    <th className="sku">รหัสสินค้า</th>
+                    <th className="desc">รายละเอียด</th>
+                    <th className="qty">จำนวน</th>
+                    <th className="price">ราคา</th>
+                    <th className="amount">เป็นเงิน</th>
                   </tr>
                 </thead>
                 <tbody>
                   {items.map((item, index) => {
                     const { sku, description } = splitItemDescription(item.description);
-                    const descriptionWithSku = sku !== "-" ? `${sku} - ${description}` : description;
                     return (
                       <tr key={`${quoteId}-${index}`}>
                         <td className="seq">{index + 1}</td>
-                        <td>{descriptionWithSku}</td>
-                        <td className="unit">-</td>
-                        <td className="num">{item.qty}</td>
-                        <td className="num">{formatCurrencyPlain(item.price)}</td>
-                        <td className="num">{formatCurrencyPlain(item.qty * item.price)}</td>
+                        <td className="sku">{sku !== "-" ? sku : ""}</td>
+                        <td className="desc">{description}</td>
+                        <td className="qty">{item.qty}</td>
+                        <td className="price">{formatCurrencyPlain(item.price)}</td>
+                        <td className="amount">{formatCurrencyPlain(item.qty * item.price)}</td>
                       </tr>
                     );
                   })}
@@ -552,19 +557,21 @@ export default async function ApprovePage({
               <table>
                 <tbody>
                   <tr>
-                    <td className="label">ยอดรวม</td>
+                    <td className="label">รวมเป็นเงิน</td>
                     <td className="value">{formatCurrencyPlain(subtotal)}</td>
                   </tr>
+                  {discount > 0 && (
+                    <tr>
+                      <td className="label">ส่วนลด</td>
+                      <td className="value">{formatCurrencyPlain(discountDisplay)}</td>
+                    </tr>
+                  )}
                   <tr>
-                    <td className="label">ส่วนลด</td>
-                    <td className="value">{formatCurrencyPlain(discountDisplay)}</td>
-                  </tr>
-                  <tr>
-                    <td className="label">ภาษีมูลค่าเพิ่ม (7%)</td>
+                    <td className="label">ภาษีมูลค่าเพิ่ม 7%</td>
                     <td className="value">{formatCurrencyPlain(vat)}</td>
                   </tr>
                   <tr>
-                    <td className="label grand">ยอดรวมสุทธิ</td>
+                    <td className="label grand">ราคาสุทธิ</td>
                     <td className="value grand">{formatCurrencyPlain(grandTotal)}</td>
                   </tr>
                 </tbody>
@@ -577,20 +584,29 @@ export default async function ApprovePage({
             </section>
 
             <div className="signatures">
-              <div className="signature">
-                <div className="signature-line"></div>
+              <div className="signature-box signature-box--seller">
+                {issuerSignatureImage ? (
+                  <Image
+                    className="signature-image"
+                    src={issuerSignatureImage}
+                    alt="ลายเซ็น"
+                    width={180}
+                    height={72}
+                    unoptimized
+                  />
+                ) : (
+                  <div className="signature-line-empty"></div>
+                )}
                 <div className="signature-name">{issuerCaption}</div>
-                <div>พนักงานขาย/Issuer</div>
+                <div className="signature-title">พนักงานขาย</div>
               </div>
-              <div className="signature signature--approval">
+              <div className="signature-box signature-box--buyer">
                 <div className="signature-approval-title">พิจารณาตกลงจัดซื้อจัดจ้าง</div>
-                <div className="signature-approval-line">
-                  <span className="label">ลงชื่อ</span>
-                  <span className="line"></span>
+                <div className="signature-line-dots">
+                  ลงชื่อ ...........................................................
                 </div>
                 <div className="signature-approval-caption">
-                  ผู้มีอำนาจลงนามเพื่อยืนยันการจัดซื้อจัดจ้าง พร้อมตราประทับ
-                  (ถ้ามี)
+                  ผู้อำนาจลงนามเพื่อยืนยันการจัดซื้อจัดจ้าง พร้อมตราประทับ (ถ้ามี)
                 </div>
               </div>
             </div>
@@ -611,6 +627,9 @@ export default async function ApprovePage({
           </filter>
         </defs>
       </svg>
-    </main>
+      </main>
+
+      <BottomNav items={visibleMenuItems} activeHref="/quotation" />
+    </div>
   );
 }

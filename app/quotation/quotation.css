@@ -1,0 +1,379 @@
+.quotation-page-stitch {
+  background: #f7f4f2;
+}
+
+.quotation-stitch-sidebar {
+  background: #2a1718;
+  bottom: 0;
+  box-shadow: 8px 0 24px rgba(42, 23, 24, 0.12);
+  color: #f4e8e5;
+  display: flex;
+  flex-direction: column;
+  left: 0;
+  padding: 1.25rem 0.8rem;
+  position: fixed;
+  top: 0;
+  width: 15rem;
+  z-index: 50;
+}
+
+.quotation-stitch-sidebar__brand { align-items: center; display: flex; gap: 0.7rem; margin: 0 0 2.2rem 0.5rem; }
+.quotation-stitch-sidebar__logo { align-items: center; background: #741010; border-radius: 0.65rem; color: white; display: flex; flex: 0 0 auto; height: 2.5rem; justify-content: center; width: 2.5rem; }
+.quotation-stitch-sidebar__logo svg { height: 1.4rem; width: 1.4rem; }
+.quotation-stitch-sidebar__brand strong,.quotation-stitch-sidebar__brand span { display: block; }
+.quotation-stitch-sidebar__brand strong { color: white; font-family: var(--font-kanit), sans-serif; font-size: 0.9rem; line-height: 1.2; }
+.quotation-stitch-sidebar__brand span { color: #c9aead; font-size: 0.62rem; letter-spacing: 0.08em; margin-top: 0.2rem; text-transform: uppercase; }
+.quotation-stitch-sidebar__nav,.quotation-stitch-sidebar__footer { display: grid; gap: 0.35rem; }
+.quotation-stitch-sidebar__nav a,.quotation-stitch-sidebar__footer a { align-items: center; border-radius: 0.6rem; color: #d7c4c2; display: flex; font-family: var(--font-kanit), sans-serif; font-size: 0.86rem; gap: 0.75rem; min-height: 2.8rem; padding: 0.65rem 0.8rem; text-decoration: none; transition: background 160ms ease, color 160ms ease, transform 160ms ease; }
+.quotation-stitch-sidebar__nav a:hover,.quotation-stitch-sidebar__footer a:hover { background: rgba(255, 255, 255, 0.08); color: white; transform: translateX(2px); }
+.quotation-stitch-sidebar__nav a.is-active { background: #741010; box-shadow: 0 10px 22px rgba(116, 16, 16, 0.2); color: white; }
+.quotation-stitch-sidebar__nav svg,.quotation-stitch-sidebar__footer svg { height: 1.2rem; width: 1.2rem; }
+.quotation-stitch-sidebar__footer { border-top: 1px solid rgba(244, 232, 229, 0.14); margin-top: auto; padding-top: 1rem; }
+
+.quotation-page-stitch > main {
+  box-sizing: border-box;
+  margin-left: 15rem;
+  padding: 4.75rem 2.25rem 4rem !important;
+  width: calc(100% - 15rem);
+}
+
+.quotation-page-stitch .quotation-page-shell { max-width: 1180px; margin: 0 auto; }
+.quotation-page-stitch .quotation-page-heading { border-bottom: 1px solid #e6dedb; margin-bottom: 1.5rem; padding-bottom: 1.25rem; }
+.quotation-page-stitch .quotation-page-heading h1 { color: #261313; font-family: var(--font-kanit), sans-serif; font-size: clamp(1.7rem, 3vw, 2.35rem); letter-spacing: -0.04em; margin: 0; }
+.quotation-page-stitch .quotation-page-heading .bg-blue-100 { background: #f3e5e2 !important; color: #741010 !important; }
+.quotation-page-stitch section.bg-white { border-color: #e6dedb; border-radius: 0.9rem; box-shadow: 0 12px 30px rgba(47, 26, 23, 0.045); }
+.quotation-page-stitch section h2 { letter-spacing: -0.025em; }
+.quotation-page-stitch input:focus,.quotation-page-stitch textarea:focus,.quotation-page-stitch select:focus { border-color: #741010 !important; box-shadow: 0 0 0 3px rgba(116, 16, 16, 0.1) !important; }
+.quotation-page-stitch .quote-history__card { border-color: #e6dedb; box-shadow: 0 12px 30px rgba(47, 26, 23, 0.045); }
+
+@media (max-width: 900px) {
+  .quotation-stitch-sidebar { width: 4.5rem; }
+  .quotation-stitch-sidebar__brand { justify-content: center; margin-left: 0; }
+  .quotation-stitch-sidebar__brand > div:last-child,.quotation-stitch-sidebar__nav a span,.quotation-stitch-sidebar__footer a span { display: none; }
+  .quotation-stitch-sidebar__nav a,.quotation-stitch-sidebar__footer a { justify-content: center; padding-left: 0; padding-right: 0; }
+  .quotation-page-stitch > main { margin-left: 4.5rem; padding-left: 1.25rem !important; padding-right: 1.25rem !important; width: calc(100% - 4.5rem); }
+}
+
+@media (max-width: 768px) {
+  .quotation-desktop { display: none; }
+  .quotation-page-stitch > main { margin-left: 0; padding: 1.25rem 0.65rem 5rem !important; width: 100%; }
+  .quotation-page-stitch .quotation-page-heading { margin-bottom: 1rem; padding: 0 0.2rem 1rem; }
+  .quotation-page-stitch .quotation-page-heading h1 { font-size: 1.55rem; }
+  .quotation-page-stitch section.bg-white { border-radius: 0.8rem; padding: 1rem !important; }
+}
+
+/* Quotation uses the same CI surfaces and form rhythm as Customer and Product. */
+.quotation-page-stitch {
+  background: #f8fafc;
+  color: #091426;
+  font-family: var(--font-manrope), var(--font-noto-sans-thai), sans-serif;
+}
+
+.quotation-page-stitch .quotation-page-shell {
+  max-width: 1280px;
+}
+
+.quotation-page-stitch .quotation-page-heading {
+  border-bottom-color: #e2e8f0;
+  margin-bottom: 1.25rem;
+  padding-bottom: 1rem;
+}
+
+.quotation-page-stitch .quotation-page-heading h1,
+.quotation-page-stitch section h2 {
+  color: #091426;
+  font-family: var(--font-kanit), sans-serif;
+}
+
+.quotation-page-stitch section.bg-white,
+.quotation-page-stitch #quote-history {
+  background: rgba(255, 255, 255, 0.86) !important;
+  border-color: rgba(203, 213, 225, 0.8) !important;
+  border-radius: 1rem !important;
+  box-shadow: 0 18px 40px rgba(15, 23, 42, 0.07) !important;
+}
+
+.quotation-page-stitch section h2 .bg-primary {
+  background: #741010 !important;
+}
+
+.quotation-page-stitch .bg-blue-50,
+.quotation-page-stitch .bg-blue-50\/50 {
+  background: #fff1f2 !important;
+}
+
+.quotation-page-stitch .border-blue-200,
+.quotation-page-stitch .border-blue-300 {
+  border-color: #e6b8b8 !important;
+}
+
+.quotation-page-stitch .text-blue-700,
+.quotation-page-stitch .text-blue-600 {
+  color: #741010 !important;
+}
+
+.quotation-page-stitch input,
+.quotation-page-stitch textarea,
+.quotation-page-stitch select {
+  border-color: #cbd5e1;
+  border-radius: 0.65rem;
+}
+
+.quotation-page-stitch input:focus,
+.quotation-page-stitch textarea:focus,
+.quotation-page-stitch select:focus {
+  border-color: #741010 !important;
+  box-shadow: 0 0 0 3px rgba(116, 16, 16, 0.12) !important;
+}
+
+.quotation-page-stitch .bg-primary {
+  background-color: #741010 !important;
+}
+
+.quotation-page-stitch .text-primary,
+.quotation-page-stitch .border-primary {
+  color: #741010 !important;
+  border-color: #741010 !important;
+}
+
+.quotation-page-stitch .hover\:bg-primary\/90:hover {
+  background-color: #5d0d0d !important;
+}
+
+.quotation-page-stitch .quote-history__card:hover {
+  border-color: #d8a2a2;
+}
+
+@media (max-width: 900px) {
+  .quotation-page-stitch > main {
+    padding-left: 1.25rem !important;
+    padding-right: 1.25rem !important;
+  }
+}
+
+/* A single vertical rhythm keeps the quotation workflow easy to scan. */
+.quotation-page-stitch .quotation-form-flow {
+  gap: 1.25rem !important;
+}
+
+.quotation-page-stitch .quotation-form-section {
+  padding: 1.5rem 1.75rem !important;
+}
+
+.quotation-page-stitch .quotation-form-section > div:first-child {
+  margin-bottom: 1.25rem;
+}
+
+.quotation-page-stitch .quotation-form-section h2 {
+  align-items: center;
+  display: flex;
+  font-size: 1.25rem !important;
+  gap: 0.65rem;
+  line-height: 1.25;
+}
+
+.quotation-page-stitch .quotation-form-section h2 > span:first-child {
+  flex: 0 0 auto;
+  height: 2rem;
+  width: 2rem;
+}
+
+.quotation-page-stitch .quotation-form-section .bg-slate-50 {
+  background: #f8fafc !important;
+}
+
+.quotation-page-stitch .quotation-form-section .border-slate-200,
+.quotation-page-stitch .quotation-form-section .border-slate-300 {
+  border-color: #cbd5e1 !important;
+}
+
+.quotation-page-stitch .quotation-form-section--customer .relative.flex-1 input,
+.quotation-page-stitch .quotation-form-section--products .relative.flex-1 input {
+  min-height: 2.85rem;
+}
+
+.quotation-page-stitch .quotation-form-section--customer .bg-blue-50\/50 {
+  padding: 1rem 1.25rem !important;
+}
+
+.quotation-page-stitch .quotation-form-section--products > div.relative {
+  margin-bottom: 1rem;
+}
+
+.quotation-page-stitch .quotation-form-section--products table {
+  border: 1px solid #e2e8f0;
+  border-collapse: separate;
+  border-radius: 0.75rem;
+  border-spacing: 0;
+  overflow: hidden;
+}
+
+.quotation-page-stitch .quotation-form-section--products table thead tr {
+  background: #f8fafc !important;
+}
+
+.quotation-page-stitch .quotation-form-section--products table th {
+  color: #475569;
+  font-size: 0.75rem;
+  letter-spacing: 0.02em;
+  padding-bottom: 0.75rem;
+  padding-top: 0.75rem;
+  text-transform: none;
+}
+
+.quotation-page-stitch .quotation-form-section--products table td {
+  padding-bottom: 0.9rem;
+  padding-top: 0.9rem;
+}
+
+.quotation-page-stitch .quotation-form-section--products .w-full.md\:w-1\/3 {
+  background: #f8fafc !important;
+  border-color: #cbd5e1 !important;
+  border-radius: 0.75rem;
+  max-width: 22rem;
+  width: 100%;
+}
+
+.quotation-page-stitch .quotation-form-section--products textarea {
+  min-height: 7rem;
+}
+
+.quotation-page-stitch .quotation-form-section--products > .mt-8.flex.justify-center button {
+  min-height: 3rem;
+  min-width: 14rem;
+  padding: 0.75rem 1.5rem;
+}
+
+@media (max-width: 768px) {
+  .quotation-page-stitch .quotation-form-section {
+    padding: 1.1rem !important;
+  }
+
+  .quotation-page-stitch .quotation-form-section h2 {
+    font-size: 1.1rem !important;
+  }
+
+  .quotation-page-stitch .quotation-form-section--products .w-full.md\:w-1\/3 {
+    max-width: none;
+  }
+}
+
+/* Full-width canvas aligned with the shared TopBar. */
+.quotation-page-stitch > main {
+  padding-left: 2rem !important;
+  padding-right: 2rem !important;
+}
+
+.quotation-page-stitch .quotation-page-shell {
+  max-width: none !important;
+  padding-top: 0 !important;
+  width: 100%;
+}
+
+@media (max-width: 900px) {
+  .quotation-page-stitch > main {
+    padding-left: 1.25rem !important;
+    padding-right: 1.25rem !important;
+  }
+}
+
+@media (max-width: 768px) {
+  .quotation-page-stitch > main {
+    padding-left: 0.65rem !important;
+    padding-right: 0.65rem !important;
+  }
+}
+
+/* The customer workspace mirrors the Stitch two-column information hierarchy. */
+.quotation-page-stitch .quotation-customer-layout {
+  align-items: stretch;
+  display: grid;
+  gap: 1.25rem;
+  grid-template-columns: minmax(0, 1.7fr) minmax(15rem, 0.75fr);
+}
+
+.quotation-page-stitch .quotation-customer-main {
+  min-width: 0;
+}
+
+.quotation-page-stitch .quotation-document-card {
+  align-self: stretch;
+  background: #091426;
+  border: 1px solid #17263c;
+  border-radius: 1rem;
+  box-shadow: 0 18px 35px rgba(9, 20, 38, 0.16);
+  color: #ffffff;
+  min-width: 0;
+  padding: 1.25rem;
+}
+
+.quotation-page-stitch .quotation-document-card__header {
+  align-items: center;
+  display: flex;
+  gap: 0.75rem;
+  justify-content: space-between;
+  margin-bottom: 0.5rem;
+}
+
+.quotation-page-stitch .quotation-document-card__header h3 {
+  color: #ffffff;
+  font-family: var(--font-kanit), sans-serif;
+  font-size: 1.05rem;
+  font-weight: 600;
+  margin: 0;
+}
+
+.quotation-page-stitch .quotation-document-card__header svg {
+  background: #741010;
+  border-radius: 0.65rem;
+  flex: 0 0 auto;
+  height: 2.5rem;
+  padding: 0.55rem;
+  width: 2.5rem;
+}
+
+.quotation-page-stitch .quotation-document-card__row {
+  border-top: 1px solid rgba(216, 227, 251, 0.15);
+  display: grid;
+  gap: 0.25rem;
+  padding: 0.95rem 0;
+}
+
+.quotation-page-stitch .quotation-document-card__row span {
+  color: #aebbd1;
+  font-size: 0.75rem;
+}
+
+.quotation-page-stitch .quotation-document-card__row strong {
+  color: #ffffff;
+  font-size: 0.9rem;
+  font-weight: 600;
+  overflow-wrap: anywhere;
+}
+
+@media (max-width: 900px) {
+  .quotation-page-stitch .quotation-customer-layout {
+    grid-template-columns: 1fr;
+  }
+
+  .quotation-page-stitch .quotation-document-card {
+    display: grid;
+    gap: 0 1rem;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+
+  .quotation-page-stitch .quotation-document-card__header {
+    align-items: center;
+    grid-column: 1 / -1;
+  }
+}
+
+@media (max-width: 560px) {
+  .quotation-page-stitch .quotation-document-card {
+    display: block;
+  }
+
+  .quotation-page-stitch .quotation-document-card__header {
+    display: flex;
+  }
+}

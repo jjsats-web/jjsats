@@ -28,7 +28,7 @@ type Activity = {
 };
 
 const menuItems: MenuItem[] = [
-  { id: "quote2", href: "/quotation", label: "เสนอราคา2", icon: "description" },
+  { id: "quote2", href: "/quotation", label: "ใบเสนอราคา", icon: "description" },
   { id: "customer", href: "/customer", label: "ทะเบียนลูกค้า", icon: "group", adminOnly: true },
   {
     id: "product",

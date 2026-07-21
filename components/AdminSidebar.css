@@ -1,0 +1,98 @@
+.admin-sidebar {
+  --admin-sidebar-ink: #091426;
+  --admin-sidebar-primary: #741010;
+  --admin-sidebar-muted: #aebbd1;
+  background: var(--admin-sidebar-ink);
+  bottom: 0;
+  box-shadow: 8px 0 24px rgba(9, 20, 38, 0.12);
+  color: #d8e3fb;
+  display: flex;
+  flex-direction: column;
+  left: 0;
+  padding: 1.25rem 0.8rem;
+  position: fixed;
+  top: 0;
+  width: 15rem;
+  z-index: 50;
+}
+
+.admin-sidebar__brand {
+  align-items: center;
+  display: flex;
+  gap: 0.7rem;
+  margin: 0 0 2.2rem 0.5rem;
+}
+
+.admin-sidebar__logo {
+  align-items: center;
+  background: #ffffff;
+  border-radius: 0.65rem;
+  color: var(--admin-sidebar-ink);
+  display: flex;
+  flex: 0 0 auto;
+  height: 2.5rem;
+  justify-content: center;
+  width: 2.5rem;
+}
+
+.admin-sidebar__logo svg { height: 1.45rem; width: 1.45rem; }
+.admin-sidebar__brand strong,
+.admin-sidebar__brand span { display: block; }
+.admin-sidebar__brand strong {
+  color: #ffffff;
+  font-family: var(--font-kanit), sans-serif;
+  font-size: 0.9rem;
+  line-height: 1.2;
+}
+.admin-sidebar__brand span {
+  color: #8590a6;
+  font-size: 0.62rem;
+  letter-spacing: 0.08em;
+  margin-top: 0.2rem;
+  text-transform: uppercase;
+}
+
+.admin-sidebar__nav,
+.admin-sidebar__footer { display: grid; gap: 0.35rem; }
+.admin-sidebar__nav a,
+.admin-sidebar__footer a {
+  align-items: center;
+  border-radius: 0.6rem;
+  color: var(--admin-sidebar-muted);
+  display: flex;
+  font-family: var(--font-kanit), sans-serif;
+  font-size: 0.86rem;
+  gap: 0.75rem;
+  min-height: 2.8rem;
+  padding: 0.65rem 0.8rem;
+  text-decoration: none;
+  transition: background 160ms ease, color 160ms ease, transform 160ms ease;
+}
+.admin-sidebar__nav a:hover,
+.admin-sidebar__footer a:hover {
+  background: rgba(255, 255, 255, 0.08);
+  color: #ffffff;
+  transform: translateX(2px);
+}
+.admin-sidebar__nav a.is-active {
+  background: var(--admin-sidebar-primary);
+  box-shadow: 0 10px 22px rgba(116, 16, 16, 0.22);
+  color: #ffffff;
+}
+.admin-sidebar__nav svg,
+.admin-sidebar__footer svg { height: 1.2rem; width: 1.2rem; }
+.admin-sidebar__footer {
+  border-top: 1px solid rgba(216, 227, 251, 0.12);
+  margin-top: auto;
+  padding-top: 1rem;
+}
+
+@media (max-width: 900px) {
+  .admin-sidebar { width: 4.5rem; }
+  .admin-sidebar__brand { justify-content: center; margin-left: 0; }
+  .admin-sidebar__brand > div:last-child,
+  .admin-sidebar__nav a span,
+  .admin-sidebar__footer a span { display: none; }
+  .admin-sidebar__nav a,
+  .admin-sidebar__footer a { justify-content: center; padding-left: 0; padding-right: 0; }
+}
