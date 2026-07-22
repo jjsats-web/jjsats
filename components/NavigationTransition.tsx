@@ -1,9 +1,10 @@
 "use client";
 
+import Image from "next/image";
 import { usePathname, useRouter } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
 
-const TRANSITION_MS = 300;
+const TRANSITION_MS = 620;
 
 export default function NavigationTransition() {
   const router = useRouter();
@@ -58,9 +59,21 @@ export default function NavigationTransition() {
   return (
     <div className="navigation-transition" aria-hidden="true">
       <div className="navigation-transition__glow" />
+      <div className="navigation-transition__orb navigation-transition__orb--one" />
+      <div className="navigation-transition__orb navigation-transition__orb--two" />
       <div className="navigation-transition__core">
-        <div className="navigation-transition__ring">
-          <span />
+        <div className="navigation-transition__brand">
+          <span className="navigation-transition__brand-halo" />
+          <span className="navigation-transition__brand-window">
+            <Image
+              className="navigation-transition__brand-image"
+              src="/jjsats-loader-logo.png"
+              alt=""
+              width={160}
+              height={160}
+              priority
+            />
+          </span>
         </div>
         <div className="navigation-transition__progress">
           <span />
